@@ -27,7 +27,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tokio::task::spawn(async move {
             info!("got connection from {:?}", remote_addr);
 
-            let service = service_fn(|req: Request<Body>| hello(req));
+            let service = service_fn(|req: Request<Body>| {
+                info!("in service_fn");
+                hello(req)
+            });
 
             if let Err(http_err) = Http::new()
                 .http2_only(true)
