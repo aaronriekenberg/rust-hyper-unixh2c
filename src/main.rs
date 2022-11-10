@@ -46,6 +46,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 async fn hello(request: Request<Body>) -> Result<Response<Body>, Infallible> {
     info!("request = {:?}", request);
+    info!("request.version = {:?}", request.version());
+    info!("request.method = {:?}", request.method());
+    info!("request.uri.path = {}", request.uri().path());
 
     Ok(Response::builder()
         .status(StatusCode::OK)
