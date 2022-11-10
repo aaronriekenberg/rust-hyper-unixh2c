@@ -1,0 +1,32 @@
+{
+    "context_configuration": {
+        "context": "/cgi-bin"
+    },
+    "server_configuration": {
+        "bind_address": "./socket"
+    },
+    "command_configuration": {
+        "max_concurrent_commands": 1,
+        "semaphore_acquire_timeout": "200ms",
+        "commands": [
+            {
+                "id": "sleep",
+                "description": "sleep",
+                "command": "/bin/sleep",
+                "args": [
+                    "5"
+                ]
+            },
+            {
+                "id": "vmstat",
+                "description": "vmstat",
+                "command": "/usr/bin/vmstat"
+            },
+            {
+                "id": "w",
+                "description": "w",
+                "command": "/usr/bin/w"
+            }
+        ]
+    }
+}

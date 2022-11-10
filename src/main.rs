@@ -1,58 +1,31 @@
-use hyper::http::{Request, Response, StatusCode};
-use hyper::{server::conn::Http, service::service_fn, Body};
+#![warn(rust_2018_idioms)]
 
-use tokio::net::UnixListener;
+mod config;
+mod handlers;
+mod server;
 
-use tracing::{debug, info};
+use anyhow::Context;
 
-use std::convert::Infallible;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    tracing_subscriber::fmt::init();
-
-    let path = "./socket";
-
-    // do not fail on remove error, the path may not exist.
-    let remove_result = tokio::fs::remove_file(path).await;
-    debug!("remove_result = {:?}", remove_result);
-
-    let unix_listener = UnixListener::bind(&path)?;
-
-    let local_addr = unix_listener.local_addr()?;
-    info!("listening on {:?}", local_addr);
-
-    loop {
-        let (unix_stream, remote_addr) = unix_listener.accept().await?;
-        tokio::task::spawn(async move {
-            info!("got connection from {:?}", remote_addr);
-
-            let service = service_fn(|req| {
-                info!("in service_fn");
-                hello(req)
-            });
-
-            if let Err(http_err) = Http::new()
-                .http2_only(true)
-                .serve_connection(unix_stream, service)
-                .await
-            {
-                info!("Error while serving HTTP connection: {:?}", http_err);
-            }
-            info!("end connection from {:?}", remote_addr);
-        });
-    }
+fn app_name() -> String {
+    std::env::args().nth(0).unwrap_or("[UNKNOWN]".to_owned())
 }
 
-async fn hello(request: Request<Body>) -> Result<Response<Body>, Infallible> {
-    info!("request = {:?}", request);
-    info!("request.version = {:?}", request.version());
-    info!("request.method = {:?}", request.method());
-    info!("request.uri.path = {}", request.uri().path());
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
 
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .header("X-Custom-Foo", "Bar")
-        .body(Body::from("Hello World!"))
-        .unwrap())
+    let config_file = std::env::args().nth(1).with_context(|| {
+        format!(
+            "config file required as command line argument: {} <config file>",
+            app_name(),
+        )
+    })?;
+
+    crate::config::read_configuration(config_file)
+        .await
+        .context("read_configuration error")?;
+
+    let handlers = crate::handlers::create_handlers()?;
+
+    crate::server::run_server(handlers).await
 }
