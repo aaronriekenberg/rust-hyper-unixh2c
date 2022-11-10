@@ -30,10 +30,8 @@ pub async fn run_server(handlers: Arc<dyn RequestHandler>) -> anyhow::Result<()>
         tokio::task::spawn(async move {
             info!("got connection from {:?}", remote_addr);
 
-            let handlers_connection_clone = Arc::clone(&handlers_clone);
-
             let service = service_fn(|req| {
-                let handlers_service_clone = Arc::clone(&handlers_connection_clone);
+                let handlers_service_clone = Arc::clone(&handlers_clone);
                 invoke_handlers(handlers_service_clone, req)
             });
 
