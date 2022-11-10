@@ -26,9 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let (unix_stream, remote_addr) = unix_listener.accept().await?;
         tokio::task::spawn(async move {
             info!("got connection from {:?}", remote_addr);
+
+            let service = service_fn(|req: Request<Body>| hello(req));
+
             if let Err(http_err) = Http::new()
                 .http2_only(true)
-                .serve_connection(unix_stream, service_fn(hello))
+                .serve_connection(unix_stream, service)
                 .await
             {
                 info!("Error while serving HTTP connection: {:?}", http_err);
