@@ -10,19 +10,17 @@ use hyper::{
     Body,
 };
 
-use std::sync::Arc;
-
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
     async fn handle(&self, request: Request<Body>) -> Response<Body>;
 }
 
-pub fn create_handlers() -> anyhow::Result<Arc<dyn RequestHandler>> {
+pub fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
     let mut routes = Vec::new();
 
     routes.append(&mut commands::create_routes()?);
 
     routes.append(&mut request_info::create_routes());
 
-    Ok(Arc::new(route::Router::new(routes)?))
+    Ok(Box::new(route::Router::new(routes)?))
 }

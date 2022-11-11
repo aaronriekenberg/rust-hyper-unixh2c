@@ -14,11 +14,11 @@ use std::{convert::Infallible, sync::Arc};
 use crate::handlers::RequestHandler;
 
 pub struct Server {
-    handlers: Arc<dyn RequestHandler>,
+    handlers: Box<dyn RequestHandler>,
 }
 
 impl Server {
-    pub fn new(handlers: Arc<dyn RequestHandler>) -> Arc<Self> {
+    pub fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
         Arc::new(Self { handlers })
     }
 
