@@ -1,0 +1,14 @@
+# ~/.config/systemd/user/rust-hyper-notcgi.service
+
+[Unit]
+AssertPathExists=%h/rust-hyper-notcgi/target/release/rust-hyper-notcgi
+
+[Service]
+WorkingDirectory=%h/rust-hyper-notcgi
+ExecStart=%h/rust-hyper-notcgi/target/release/rust-hyper-notcgi ./config/config.json
+Restart=always
+Environment=RUST_LOG=info
+UMask=007
+
+[Install]
+WantedBy=default.target
