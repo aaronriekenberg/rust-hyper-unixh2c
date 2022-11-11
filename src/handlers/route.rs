@@ -4,9 +4,9 @@ use anyhow::Context;
 
 use async_trait::async_trait;
 
-use hyper::{Body, Request, Response};
+use hyper::{Body, Response};
 
-use crate::handlers::{utils::build_status_code_response, RequestHandler};
+use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
 
 pub type PathSuffixAndHandler = (PathBuf, Box<dyn RequestHandler>);
 
@@ -46,8 +46,11 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(&self, request: Request<Body>) -> Response<Body> {
-        match self.uri_to_request_handler.get(request.uri().path()) {
+    async fn handle(&self, request: HttpRequest) -> Response<Body> {
+        match self
+            .uri_to_request_handler
+            .get(request.hyper_request().uri().path())
+        {
             Some(handler) => handler.handle(request).await,
             None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
         }

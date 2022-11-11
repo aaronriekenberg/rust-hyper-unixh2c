@@ -2,6 +2,7 @@
 
 mod config;
 mod handlers;
+mod request;
 mod server;
 
 use anyhow::Context;

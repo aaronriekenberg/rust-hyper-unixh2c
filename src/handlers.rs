@@ -5,14 +5,13 @@ mod utils;
 
 use async_trait::async_trait;
 
-use hyper::{
-    http::{Request, Response},
-    Body,
-};
+use hyper::{http::Response, Body};
+
+use crate::request::HttpRequest;
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(&self, request: Request<Body>) -> Response<Body>;
+    async fn handle(&self, request: HttpRequest) -> Response<Body>;
 }
 
 pub fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {

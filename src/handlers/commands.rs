@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use chrono::prelude::{Local, SecondsFormat};
 
 use hyper::{
-    http::{Request, Response, StatusCode},
+    http::{Response, StatusCode},
     Body,
 };
 
@@ -24,7 +24,7 @@ use serde::Serialize;
 use crate::handlers::{
     route::PathSuffixAndHandler,
     utils::{build_json_body_response, build_json_response, build_status_code_response},
-    RequestHandler,
+    HttpRequest, RequestHandler,
 };
 
 fn current_time_string() -> String {
@@ -46,7 +46,7 @@ impl AllCommandsHandler {
 
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
-    async fn handle(&self, _request: Request<Body>) -> Response<Body> {
+    async fn handle(&self, _request: HttpRequest) -> Response<Body> {
         build_json_body_response(Body::from(self.json_string.clone()))
     }
 }
@@ -148,7 +148,7 @@ impl RunCommandHandler {
 
 #[async_trait]
 impl RequestHandler for RunCommandHandler {
-    async fn handle(&self, _request: Request<Body>) -> Response<Body> {
+    async fn handle(&self, _request: HttpRequest) -> Response<Body> {
         let permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);

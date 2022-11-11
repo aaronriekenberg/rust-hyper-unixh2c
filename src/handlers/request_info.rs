@@ -2,14 +2,18 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use async_trait::async_trait;
 
-use hyper::{http::Version, Body, Request, Response};
+use hyper::{http::Version, Body, Response};
 
 use serde::Serialize;
 
-use crate::handlers::{route::PathSuffixAndHandler, utils::build_json_response, RequestHandler};
+use crate::handlers::{
+    route::PathSuffixAndHandler, utils::build_json_response, HttpRequest, RequestHandler,
+};
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
+    connection_id: u64,
+    request_id: u64,
     method: &'a str,
     version: &'a str,
     request_uri: String,
@@ -26,8 +30,8 @@ impl RequestInfoHandler {
 
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
-    async fn handle(&self, request: Request<Body>) -> Response<Body> {
-        let version = match request.version() {
+    async fn handle(&self, request: HttpRequest) -> Response<Body> {
+        let version = match request.hyper_request().version() {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
             Version::HTTP_11 => "HTTP/1.1",
@@ -37,10 +41,13 @@ impl RequestHandler for RequestInfoHandler {
         };
 
         let response = RequestInfoResponse {
-            method: request.method().as_str(),
+            connection_id: *request.connection_id(),
+            request_id: *request.request_id(),
+            method: request.hyper_request().method().as_str(),
             version,
-            request_uri: request.uri().to_string(),
+            request_uri: request.hyper_request().uri().to_string(),
             http_headers: request
+                .hyper_request()
                 .headers()
                 .iter()
                 .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
