@@ -10,6 +10,7 @@ use crate::handlers::{route::PathSuffixAndHandler, utils::build_json_response, R
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
+    method: &'a str,
     version: &'a str,
     request_uri: String,
     http_headers: BTreeMap<&'a str, &'a str>,
@@ -35,17 +36,16 @@ impl RequestHandler for RequestInfoHandler {
             _ => "[Unknown]",
         };
 
-        let mut response = RequestInfoResponse {
+        let response = RequestInfoResponse {
+            method: request.method().as_str(),
             version,
             request_uri: request.uri().to_string(),
-            http_headers: BTreeMap::new(),
+            http_headers: request
+                .headers()
+                .iter()
+                .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
+                .collect(),
         };
-
-        for (key, value) in request.headers().iter() {
-            response
-                .http_headers
-                .insert(key.as_str(), value.to_str().unwrap_or("[Unknown]"));
-        }
 
         build_json_response(response)
     }
