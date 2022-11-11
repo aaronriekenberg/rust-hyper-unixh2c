@@ -34,7 +34,7 @@ impl RequestHandler for RequestInfoHandler {
             Version::HTTP_3 => "HTTP/3.0",
             _ => "[Unknown]",
         };
-        
+
         let mut response = RequestInfoResponse {
             version,
             request_uri: request.uri().to_string(),

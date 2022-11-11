@@ -1,3 +1,4 @@
+mod commands;
 mod request_info;
 mod route;
 mod utils;
@@ -18,6 +19,8 @@ pub trait RequestHandler: Send + Sync {
 
 pub fn create_handlers() -> anyhow::Result<Arc<dyn RequestHandler>> {
     let mut routes = Vec::new();
+
+    routes.append(&mut commands::create_routes()?);
 
     routes.append(&mut request_info::create_routes());
 
