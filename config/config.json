@@ -1,0 +1,90 @@
+{
+    "context_configuration": {
+        "context": "/cgi-bin"
+    },
+    "server_configuration": {
+        "bind_address": "/var/www/run/go-fastcgi/socket"
+    },
+    "command_configuration": {
+        "max_concurrent_commands": 10,
+        "semaphore_acquire_timeout": "200ms",
+        "commands": [
+            {
+                "id": "df",
+                "description": "df",
+                "command": "/usr/bin/df",
+                "args": [
+                    "-h"
+                ]
+            },
+            {
+                "id": "git_log",
+                "description": "git log -1",
+                "command": "/usr/bin/git",
+                "args": [
+                    "log",
+                    "-1"
+                ]
+            },
+            {
+                "id": "ip_addr",
+                "description": "ip addr",
+                "command": "/usr/sbin/ip",
+                "args": [
+                    "addr"
+                ]
+            },
+            {
+                "id": "lscpu",
+                "description": "lscpu",
+                "command": "/usr/bin/lscpu"
+            },
+            {
+                "id": "netstat_an",
+                "description": "netstat -an",
+                "command": "/usr/bin/netstat",
+                "args": [
+                    "-a",
+                    "-n"
+                ]
+            },
+            {
+                "id": "pitemp",
+                "description": "pitemp",
+                "command": "/home/aaron/repo/raspberrypi/pitemp.sh"
+            },
+            {
+                "id": "timedatectl_timesync_status",
+                "description": "timedatectl timesync status",
+                "command": "/usr/bin/timedatectl",
+                "args": [
+                    "timesync-status"
+                ]
+            },
+            {
+                "id": "top",
+                "description": "top",
+                "command": "/usr/bin/top",
+                "args": [
+                    "-b",
+                    "-n1"
+                ]
+            },
+            {
+                "id": "uptime",
+                "description": "uptime",
+                "command": "/usr/bin/uptime"
+            },
+            {
+                "id": "vmstat",
+                "description": "vmstat",
+                "command": "/usr/bin/vmstat"
+            },
+            {
+                "id": "w",
+                "description": "w",
+                "command": "/usr/bin/w"
+            }
+        ]
+    }
+}
