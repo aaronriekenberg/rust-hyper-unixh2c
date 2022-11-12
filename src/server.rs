@@ -53,7 +53,7 @@ impl Server {
                 remote_addr, connection_id
             );
 
-            let service = service_fn(move |request| {
+            let service = service_fn(|request| {
                 let self_clone = Arc::clone(&self);
 
                 async move { self_clone.handle_request(connection_id, request).await }
