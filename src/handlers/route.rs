@@ -9,21 +9,21 @@ use hyper::{http::Method, Body, Response};
 use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
 
 pub struct RouteInfo {
-    pub method: Method,
+    pub method: &'static Method,
     pub path_suffix: PathBuf,
     pub handler: Box<dyn RequestHandler>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 struct RouteKey<'a> {
-    method: Method,
+    method: &'a Method,
     path: Cow<'a, str>,
 }
 
 impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
     fn from(http_request: &'a HttpRequest) -> Self {
         Self {
-            method: http_request.hyper_request().method().clone(),
+            method: http_request.hyper_request().method(),
             path: Cow::from(http_request.hyper_request().uri().path()),
         }
     }

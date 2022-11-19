@@ -171,7 +171,7 @@ pub fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
     let mut routes: Vec<RouteInfo> = Vec::with_capacity(1 + command_configuration.commands().len());
 
     routes.push(RouteInfo {
-        method: Method::GET,
+        method: &Method::GET,
         path_suffix: PathBuf::from("commands"),
         handler: Box::new(AllCommandsHandler::new(command_configuration.commands())?),
     });
@@ -182,7 +182,7 @@ pub fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
         let path_suffix = PathBuf::from("commands").join(command_info.id());
 
         routes.push(RouteInfo {
-            method: Method::GET,
+            method: &Method::GET,
             path_suffix,
             handler: Box::new(RunCommandHandler::new(
                 Arc::clone(&run_command_semaphore),

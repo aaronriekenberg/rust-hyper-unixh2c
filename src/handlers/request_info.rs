@@ -58,7 +58,7 @@ impl RequestHandler for RequestInfoHandler {
 
 pub fn create_routes() -> Vec<RouteInfo> {
     vec![RouteInfo {
-        method: Method::GET,
+        method: &Method::GET,
         path_suffix: PathBuf::from("request_info"),
         handler: Box::new(RequestInfoHandler::new()),
     }]
