@@ -80,3 +80,44 @@ impl RequestHandler for Router {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_route_key() {
+        assert_eq!(
+            RouteKey {
+                method: &Method::GET,
+                path: Cow::Borrowed("/test"),
+            },
+            RouteKey {
+                method: &Method::GET,
+                path: Cow::Owned("/test".to_owned()),
+            }
+        );
+
+        assert_ne!(
+            RouteKey {
+                method: &Method::GET,
+                path: Cow::Borrowed("/test"),
+            },
+            RouteKey {
+                method: &Method::PUT,
+                path: Cow::Owned("/test".to_owned()),
+            }
+        );
+
+        assert_ne!(
+            RouteKey {
+                method: &Method::GET,
+                path: Cow::Borrowed("/nottest"),
+            },
+            RouteKey {
+                method: &Method::GET,
+                path: Cow::Owned("/test".to_owned()),
+            }
+        );
+    }
+}
