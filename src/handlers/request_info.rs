@@ -29,7 +29,9 @@ impl RequestInfoHandler {
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
-        let version = match request.hyper_request().version() {
+        let hyper_request = request.hyper_request();
+
+        let version = match hyper_request.version() {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
             Version::HTTP_11 => "HTTP/1.1",
@@ -41,11 +43,10 @@ impl RequestHandler for RequestInfoHandler {
         let response = RequestInfoResponse {
             connection_id: *request.connection_id(),
             request_id: *request.request_id(),
-            method: request.hyper_request().method().as_str(),
+            method: hyper_request.method().as_str(),
             version,
-            request_uri: request.hyper_request().uri().to_string(),
-            http_headers: request
-                .hyper_request()
+            request_uri: hyper_request.uri().to_string(),
+            http_headers: hyper_request
                 .headers()
                 .iter()
                 .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
