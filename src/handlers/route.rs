@@ -72,7 +72,7 @@ impl Router {
 #[async_trait]
 impl RequestHandler for Router {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
-        let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
+        let handler_option = self.route_key_to_handler.get(&request.into());
 
         match handler_option {
             Some(handler) => handler.handle(&request).await,
