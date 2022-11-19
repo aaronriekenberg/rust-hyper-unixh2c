@@ -46,7 +46,7 @@ impl AllCommandsHandler {
 
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
-    async fn handle(&self, _request: HttpRequest) -> Response<Body> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
         build_json_body_response(Body::from(self.json_string.clone()))
     }
 }
@@ -148,7 +148,7 @@ impl RunCommandHandler {
 
 #[async_trait]
 impl RequestHandler for RunCommandHandler {
-    async fn handle(&self, _request: HttpRequest) -> Response<Body> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
         let permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);

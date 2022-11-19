@@ -11,7 +11,7 @@ use crate::request::HttpRequest;
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(&self, request: HttpRequest) -> Response<Body>;
+    async fn handle(&self, request: &HttpRequest) -> Response<Body>;
 }
 
 pub fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {

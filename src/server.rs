@@ -40,7 +40,7 @@ impl Server {
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
 
-        let result = self.handlers.handle(http_request).await;
+        let result = self.handlers.handle(&http_request).await;
         Ok(result)
     }
 

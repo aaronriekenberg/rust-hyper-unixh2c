@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, path::PathBuf};
 
 use anyhow::Context;
 
@@ -15,22 +15,22 @@ pub struct RouteInfo {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-struct RouteKey {
+struct RouteKey<'a> {
     method: Method,
-    path: String,
+    path: Cow<'a, str>,
 }
 
-impl From<&HttpRequest> for RouteKey {
-    fn from(http_request: &HttpRequest) -> Self {
+impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
+    fn from(http_request: &'a HttpRequest) -> Self {
         Self {
             method: http_request.hyper_request().method().clone(),
-            path: http_request.hyper_request().uri().path().to_owned(),
+            path: Cow::from(http_request.hyper_request().uri().path()),
         }
     }
 }
 
 pub struct Router {
-    route_key_to_handler: HashMap<RouteKey, Box<dyn RequestHandler>>,
+    route_key_to_handler: HashMap<RouteKey<'static>, Box<dyn RequestHandler>>,
 }
 
 impl Router {
@@ -54,7 +54,7 @@ impl Router {
 
             let key = RouteKey {
                 method: route.method,
-                path: path.to_owned(),
+                path: Cow::from(path.to_owned()),
             };
 
             if router
@@ -71,11 +71,11 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(&self, request: HttpRequest) -> Response<Body> {
-        let route_key = RouteKey::from(&request);
+    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+        let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
-        match self.route_key_to_handler.get(&route_key) {
-            Some(handler) => handler.handle(request).await,
+        match handler_option {
+            Some(handler) => handler.handle(&request).await,
             None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
         }
     }

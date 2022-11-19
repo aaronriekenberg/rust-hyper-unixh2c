@@ -28,7 +28,7 @@ impl RequestInfoHandler {
 
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
-    async fn handle(&self, request: HttpRequest) -> Response<Body> {
+    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
         let version = match request.hyper_request().version() {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
