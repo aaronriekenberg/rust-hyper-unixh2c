@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use chrono::prelude::{Local, SecondsFormat};
 
 use hyper::{
-    http::{Response, StatusCode},
+    http::{Method, Response, StatusCode},
     Body,
 };
 
@@ -22,7 +22,7 @@ use tokio::{
 use serde::Serialize;
 
 use crate::handlers::{
-    route::PathSuffixAndHandler,
+    route::RouteInfo,
     utils::{build_json_body_response, build_json_response, build_status_code_response},
     HttpRequest, RequestHandler,
 };
@@ -165,29 +165,30 @@ impl RequestHandler for RunCommandHandler {
     }
 }
 
-pub fn create_routes() -> anyhow::Result<Vec<PathSuffixAndHandler>> {
+pub fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
     let command_configuration = crate::config::instance().command_configuration();
 
-    let mut routes: Vec<PathSuffixAndHandler> =
-        Vec::with_capacity(1 + command_configuration.commands().len());
+    let mut routes: Vec<RouteInfo> = Vec::with_capacity(1 + command_configuration.commands().len());
 
-    routes.push((
-        PathBuf::from("commands"),
-        Box::new(AllCommandsHandler::new(command_configuration.commands())?),
-    ));
+    routes.push(RouteInfo {
+        method: Method::GET,
+        path_suffix: PathBuf::from("commands"),
+        handler: Box::new(AllCommandsHandler::new(command_configuration.commands())?),
+    });
 
     let run_command_semaphore = RunCommandSemapore::new(command_configuration);
 
     for command_info in command_configuration.commands() {
         let path_suffix = PathBuf::from("commands").join(command_info.id());
 
-        routes.push((
+        routes.push(RouteInfo {
+            method: Method::GET,
             path_suffix,
-            Box::new(RunCommandHandler::new(
+            handler: Box::new(RunCommandHandler::new(
                 Arc::clone(&run_command_semaphore),
                 command_info,
             )),
-        ));
+        });
     }
 
     Ok(routes)

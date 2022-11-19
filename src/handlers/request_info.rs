@@ -2,13 +2,11 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use async_trait::async_trait;
 
-use hyper::{http::Version, Body, Response};
+use hyper::{http::Method, http::Version, Body, Response};
 
 use serde::Serialize;
 
-use crate::handlers::{
-    route::PathSuffixAndHandler, utils::build_json_response, HttpRequest, RequestHandler,
-};
+use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler};
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
@@ -58,9 +56,10 @@ impl RequestHandler for RequestInfoHandler {
     }
 }
 
-pub fn create_routes() -> Vec<PathSuffixAndHandler> {
-    vec![(
-        PathBuf::from("request_info"),
-        Box::new(RequestInfoHandler::new()),
-    )]
+pub fn create_routes() -> Vec<RouteInfo> {
+    vec![RouteInfo {
+        method: Method::GET,
+        path_suffix: PathBuf::from("request_info"),
+        handler: Box::new(RequestInfoHandler::new()),
+    }]
 }
