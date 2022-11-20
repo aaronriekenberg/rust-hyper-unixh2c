@@ -45,16 +45,19 @@ impl Router {
             let uri_pathbuf =
                 PathBuf::from(context_configuration.context()).join(route.path_suffix);
 
-            let path = uri_pathbuf.to_str().with_context(|| {
-                format!(
-                    "Router::new error: route path contains invalid UTF-8 uri_pathbuf = '{:?}'",
-                    uri_pathbuf,
-                )
-            })?;
+            let path = uri_pathbuf
+                .to_str()
+                .with_context(|| {
+                    format!(
+                        "Router::new error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
+                        uri_pathbuf,
+                    )
+                })?
+                .to_owned();
 
             let key = RouteKey {
                 method: route.method,
-                path: Cow::from(path.to_owned()),
+                path: Cow::from(path),
             };
 
             if router
@@ -62,7 +65,7 @@ impl Router {
                 .insert(key.clone(), route.handler)
                 .is_some()
             {
-                anyhow::bail!("Router::new error: collision in router key '{:?}'", key);
+                anyhow::bail!("Router::new error: collision in router key = {:?}", key);
             }
         }
         Ok(router)
