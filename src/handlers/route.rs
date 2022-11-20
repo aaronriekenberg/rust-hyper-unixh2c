@@ -86,7 +86,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_route_key() {
+    fn test_route_key_equality() {
         assert_eq!(
             RouteKey {
                 method: &Method::GET,
@@ -119,5 +119,33 @@ mod test {
                 path: Cow::Owned("/test".to_owned()),
             }
         );
+    }
+
+    #[test]
+    fn test_route_key_hash() {
+        use std::{
+            collections::hash_map::DefaultHasher,
+            hash::{Hash, Hasher},
+        };
+
+        let key1 = RouteKey {
+            method: &Method::GET,
+            path: Cow::Borrowed("/test"),
+        };
+
+        let key2 = RouteKey {
+            method: &Method::GET,
+            path: Cow::Owned("/test".to_owned()),
+        };
+
+        let mut s = DefaultHasher::new();
+        key1.hash(&mut s);
+        let key1_hash = s.finish();
+
+        let mut s = DefaultHasher::new();
+        key2.hash(&mut s);
+        let key2_hash = s.finish();
+
+        assert_eq!(key1_hash, key2_hash);
     }
 }
