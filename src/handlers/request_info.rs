@@ -14,7 +14,7 @@ struct RequestInfoResponse<'a> {
     request_id: u64,
     method: &'a str,
     version: &'a str,
-    request_uri: String,
+    request_uri_path: &'a str,
     http_headers: BTreeMap<&'a str, &'a str>,
 }
 
@@ -45,7 +45,7 @@ impl RequestHandler for RequestInfoHandler {
             request_id: *request.request_id(),
             method: hyper_request.method().as_str(),
             version,
-            request_uri: hyper_request.uri().to_string(),
+            request_uri_path: hyper_request.uri().path(),
             http_headers: hyper_request
                 .headers()
                 .iter()
