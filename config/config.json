@@ -3,7 +3,7 @@
         "context": "/cgi-bin"
     },
     "server_configuration": {
-        "bind_address": "/var/www/run/go-fastcgi/socket"
+        "bind_address": "/var/www/run/cgi/socket"
     },
     "command_configuration": {
         "max_concurrent_commands": 10,
