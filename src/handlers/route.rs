@@ -78,8 +78,8 @@ impl RequestHandler for Router {
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
         match handler_option {
-            Some(handler) => handler.handle(&request).await,
             None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
+            Some(handler) => handler.handle(&request).await,
         }
     }
 }
