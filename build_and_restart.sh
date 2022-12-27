@@ -1,8 +1,8 @@
 #!/bin/bash -x
 
-cd ~/rust-hyper-notcgi
+cd ~/rust-hyper-unixh2c
 
-systemctl --user stop rust-hyper-notcgi.service
+systemctl --user stop rust-hyper-unixh2c.service
 
 git pull -v
 
@@ -13,4 +13,4 @@ if [ $RESULT -ne 0 ]; then
   exit $RESULT
 fi
 
-systemctl --user restart rust-hyper-notcgi.service
+systemctl --user restart rust-hyper-unixh2c.service
