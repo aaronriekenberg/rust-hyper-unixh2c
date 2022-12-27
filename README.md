@@ -1,4 +1,4 @@
-# rust-hyper-notcgi
+# rust-hyper-unixh2c
 
 Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
 
