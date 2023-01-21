@@ -9,34 +9,35 @@ use tracing::{debug, info};
 
 use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
 
-use std::{
-    convert::Infallible,
-    sync::{atomic::AtomicU64, atomic::Ordering, Arc},
-};
+use std::{convert::Infallible, sync::Arc};
 
-use crate::{handlers::RequestHandler, request::HttpRequest};
+use crate::{
+    connection::{ConnectionID, ConnectionIDFactory},
+    handlers::RequestHandler,
+    request::{HttpRequest, RequestIDFactory},
+};
 
 pub struct Server {
     handlers: Box<dyn RequestHandler>,
-    next_connection_id: AtomicU64,
-    next_request_id: AtomicU64,
+    connection_id_factory: ConnectionIDFactory,
+    request_id_factory: RequestIDFactory,
 }
 
 impl Server {
     pub fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            next_connection_id: AtomicU64::new(1),
-            next_request_id: AtomicU64::new(1),
+            connection_id_factory: ConnectionIDFactory::new(),
+            request_id_factory: RequestIDFactory::new(),
         })
     }
 
     async fn handle_request(
         self: Arc<Self>,
-        connection_id: u64,
+        connection_id: ConnectionID,
         hyper_request: Request<Body>,
     ) -> Result<Response<Body>, Infallible> {
-        let request_id = self.next_request_id.fetch_add(1, Ordering::Relaxed);
+        let request_id = self.request_id_factory.new_request_id();
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
 
@@ -46,11 +47,11 @@ impl Server {
 
     fn handle_connection(self: Arc<Self>, unix_stream: UnixStream, remote_addr: SocketAddr) {
         tokio::task::spawn(async move {
-            let connection_id = self.next_connection_id.fetch_add(1, Ordering::Relaxed);
+            let connection_id = self.connection_id_factory.new_connection_id();
 
             info!(
-                "got connection from {:?} connection_id = {}",
-                remote_addr, connection_id
+                "got connection from {:?} connection_id = {:?}",
+                remote_addr, connection_id,
             );
 
             let service = service_fn(|request| {
@@ -68,8 +69,8 @@ impl Server {
             }
 
             info!(
-                "end connection from {:?} connection_id = {}",
-                remote_addr, connection_id
+                "end connection from {:?} connection_id = {:?}",
+                remote_addr, connection_id,
             );
         });
     }

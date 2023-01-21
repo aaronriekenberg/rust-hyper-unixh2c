@@ -1,6 +1,7 @@
 #![warn(rust_2018_idioms)]
 
 mod config;
+mod connection;
 mod handlers;
 mod request;
 mod server;

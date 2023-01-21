@@ -41,8 +41,8 @@ impl RequestHandler for RequestInfoHandler {
         };
 
         let response = RequestInfoResponse {
-            connection_id: *request.connection_id(),
-            request_id: *request.request_id(),
+            connection_id: request.connection_id().0,
+            request_id: request.request_id().0,
             method: hyper_request.method().as_str(),
             version,
             request_uri_path: hyper_request.uri().path(),
