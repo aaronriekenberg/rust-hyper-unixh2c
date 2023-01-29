@@ -11,7 +11,7 @@
         "commands": [
             {
                 "id": "chronyc_sources",
-                "description": "chronyc -n sources -v",
+                "description": "chronyc sources",
                 "command": "/usr/bin/chronyc",
                 "args": [
                     "-n",
