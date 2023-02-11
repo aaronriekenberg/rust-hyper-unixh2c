@@ -1,4 +1,8 @@
-use std::{borrow::Cow, collections::HashMap, path::PathBuf};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 
@@ -39,11 +43,10 @@ impl Router {
             route_key_to_handler: HashMap::with_capacity(routes.len()),
         };
 
-        let context_configuration = crate::config::instance().context_configuration();
+        let context_path = Path::new(crate::config::instance().context_configuration().context());
 
         for route in routes {
-            let uri_pathbuf =
-                PathBuf::from(context_configuration.context()).join(route.path_suffix);
+            let uri_pathbuf = context_path.join(route.path_suffix);
 
             let path = uri_pathbuf
                 .to_str()
