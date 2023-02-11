@@ -46,14 +46,14 @@ impl Router {
         let context_path = Path::new(crate::config::instance().context_configuration().context());
 
         for route in routes {
-            let uri_pathbuf = context_path.join(route.path_suffix);
+            let path = context_path.join(route.path_suffix);
 
-            let path = uri_pathbuf
+            let path = path
                 .to_str()
                 .with_context(|| {
                     format!(
                         "Router::new error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
-                        uri_pathbuf,
+                        path,
                     )
                 })?
                 .to_owned();
