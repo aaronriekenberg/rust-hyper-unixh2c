@@ -9,7 +9,7 @@ use tracing::{debug, info};
 
 use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
 
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, os::fd::AsRawFd, sync::Arc};
 
 use crate::{
     connection::{ConnectionID, ConnectionIDFactory},
@@ -48,10 +48,11 @@ impl Server {
     fn handle_connection(self: Arc<Self>, unix_stream: UnixStream, remote_addr: SocketAddr) {
         tokio::task::spawn(async move {
             let connection_id = self.connection_id_factory.new_connection_id();
+            let fd = unix_stream.as_raw_fd();
 
             info!(
-                "got connection from {:?} connection_id = {:?}",
-                remote_addr, connection_id,
+                "got connection from {:?} connection_id = {:?} fd = {}",
+                remote_addr, connection_id, fd,
             );
 
             let service = service_fn(|request| {
@@ -69,8 +70,8 @@ impl Server {
             }
 
             info!(
-                "end connection from {:?} connection_id = {:?}",
-                remote_addr, connection_id,
+                "end connection from {:?} connection_id = {:?} fd = {}",
+                remote_addr, connection_id, fd,
             );
         });
     }
@@ -85,9 +86,10 @@ impl Server {
         debug!("remove_result = {:?}", remove_result);
 
         let unix_listener = UnixListener::bind(&path)?;
+        let fd = unix_listener.as_raw_fd();
 
         let local_addr = unix_listener.local_addr()?;
-        info!("listening on {:?}", local_addr);
+        info!("listening on {:?} fd = {}", local_addr, fd);
 
         loop {
             let (unix_stream, remote_addr) = unix_listener.accept().await?;
