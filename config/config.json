@@ -3,6 +3,7 @@
         "context": "/cgi-bin"
     },
     "server_configuration": {
+        "server_protocol": "HTTP2",
         "bind_address": "/var/www/run/cgi/socket"
     },
     "command_configuration": {
