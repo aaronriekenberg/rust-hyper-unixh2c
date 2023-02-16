@@ -12,6 +12,7 @@ use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
 use std::{convert::Infallible, os::fd::AsRawFd, sync::Arc};
 
 use crate::{
+    config::ServerProtocol,
     connection::{ConnectionID, ConnectionIDFactory},
     handlers::RequestHandler,
     request::{HttpRequest, RequestIDFactory},
@@ -21,6 +22,7 @@ pub struct Server {
     handlers: Box<dyn RequestHandler>,
     connection_id_factory: ConnectionIDFactory,
     request_id_factory: RequestIDFactory,
+    server_protocol: ServerProtocol,
 }
 
 impl Server {
@@ -29,6 +31,9 @@ impl Server {
             handlers,
             connection_id_factory: ConnectionIDFactory::new(),
             request_id_factory: RequestIDFactory::new(),
+            server_protocol: *crate::config::instance()
+                .server_configuration()
+                .server_protocol(),
         })
     }
 
@@ -61,11 +66,14 @@ impl Server {
                 async move { self_clone.handle_request(connection_id, request).await }
             });
 
-            if let Err(http_err) = Http::new()
-                .http2_only(true)
-                .serve_connection(unix_stream, service)
-                .await
-            {
+            let mut http = Http::new();
+
+            match self.server_protocol {
+                ServerProtocol::HTTP1 => http.http1_only(true),
+                ServerProtocol::HTTP2 => http.http2_only(true),
+            };
+
+            if let Err(http_err) = http.serve_connection(unix_stream, service).await {
                 info!("Error while serving HTTP connection: {:?}", http_err);
             }
 

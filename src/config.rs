@@ -14,9 +14,17 @@ pub struct ContextConfiguration {
     context: String,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum ServerProtocol {
+    HTTP1,
+
+    HTTP2,
+}
+
 #[derive(Debug, Deserialize, Serialize, Getters)]
 #[getset(get = "pub")]
 pub struct ServerConfiguration {
+    server_protocol: ServerProtocol,
     bind_address: String,
 }
 
