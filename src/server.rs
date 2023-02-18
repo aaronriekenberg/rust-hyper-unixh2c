@@ -54,9 +54,9 @@ impl Server {
         tokio::task::spawn(async move {
             let fd = unix_stream.as_raw_fd();
 
-            let connection_guard = self.connection_tracker.add_connection(self.server_protocol);
+            let connection = self.connection_tracker.add_connection(self.server_protocol);
 
-            let connection_id = connection_guard.connection_id();
+            let connection_id = connection.connection_id();
 
             info!(
                 "got connection from {:?} connection_id = {:?} fd = {}",

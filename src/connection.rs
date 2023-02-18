@@ -1,5 +1,3 @@
-use getset::Getters;
-
 use std::{
     collections::HashMap,
     sync::{
@@ -8,9 +6,15 @@ use std::{
     },
 };
 
-use tokio::{sync::OnceCell, time::Instant};
 
-use tracing::info;
+use chrono::prelude::{DateTime, Local};
+
+use getset::Getters;
+
+
+use tokio::sync::OnceCell;
+
+use tracing::debug;
 
 use crate::config::ServerProtocol;
 
@@ -21,7 +25,7 @@ pub struct ConnectionID(pub u64);
 #[getset(get = "pub")]
 pub struct ConnectionInfo {
     connection_id: ConnectionID,
-    creation_time: Instant,
+    creation_time: DateTime<Local>,
     server_protocol: ServerProtocol,
 }
 
@@ -29,7 +33,7 @@ impl ConnectionInfo {
     fn new(connection_id: ConnectionID, server_protocol: ServerProtocol) -> Self {
         Self {
             connection_id,
-            creation_time: Instant::now(),
+            creation_time: Local::now(),
             server_protocol,
         }
     }
@@ -88,7 +92,7 @@ impl ConnectionTracker {
 
         id_to_connection_info.insert(connection_id, connection_info);
 
-        info!(
+        debug!(
             "add_new_connection id_to_connection_info.len = {}",
             id_to_connection_info.len()
         );
@@ -101,7 +105,7 @@ impl ConnectionTracker {
 
         id_to_connection_info.remove(&connection_id);
 
-        info!(
+        debug!(
             "remove_connection id_to_connection_info.len = {}",
             id_to_connection_info.len()
         );
