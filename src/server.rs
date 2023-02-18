@@ -13,14 +13,14 @@ use std::{convert::Infallible, os::fd::AsRawFd, sync::Arc};
 
 use crate::{
     config::ServerProtocol,
-    connection::{ConnectionID, ConnectionIDFactory},
+    connection::{ConnectionID, ConnectionTracker},
     handlers::RequestHandler,
     request::{HttpRequest, RequestIDFactory},
 };
 
 pub struct Server {
     handlers: Box<dyn RequestHandler>,
-    connection_id_factory: ConnectionIDFactory,
+    connection_tracker: Arc<ConnectionTracker>,
     request_id_factory: RequestIDFactory,
     server_protocol: ServerProtocol,
 }
@@ -29,7 +29,7 @@ impl Server {
     pub fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            connection_id_factory: ConnectionIDFactory::new(),
+            connection_tracker: ConnectionTracker::new(),
             request_id_factory: RequestIDFactory::new(),
             server_protocol: *crate::config::instance()
                 .server_configuration()
@@ -52,8 +52,11 @@ impl Server {
 
     fn handle_connection(self: Arc<Self>, unix_stream: UnixStream, remote_addr: SocketAddr) {
         tokio::task::spawn(async move {
-            let connection_id = self.connection_id_factory.new_connection_id();
             let fd = unix_stream.as_raw_fd();
+
+            let connection_guard = self.connection_tracker.add_new_connection();
+
+            let connection_id = connection_guard.connection_id();
 
             info!(
                 "got connection from {:?} connection_id = {:?} fd = {}",
