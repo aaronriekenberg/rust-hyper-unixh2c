@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
 
     let handlers = crate::handlers::create_handlers()?;
 
-    let server = crate::server::Server::new(handlers);
+    let server = crate::server::Server::new(handlers).await;
 
     server.run().await
 }

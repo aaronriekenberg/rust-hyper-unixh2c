@@ -4,11 +4,11 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc, Mutex,
+        Mutex,
     },
 };
 
-use tokio::time::Instant;
+use tokio::{sync::OnceCell, time::Instant};
 
 use tracing::info;
 
@@ -17,7 +17,7 @@ use crate::config::ServerProtocol;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ConnectionID(pub u64);
 
-#[derive(Debug, Getters)]
+#[derive(Clone, Debug, Getters)]
 #[getset(get = "pub")]
 pub struct ConnectionInfo {
     connection_id: ConnectionID,
@@ -36,12 +36,12 @@ impl ConnectionInfo {
 }
 
 pub struct ConnectionGuard {
-    connection_tracker: Arc<ConnectionTracker>,
+    connection_tracker: &'static ConnectionTracker,
     connection_id: ConnectionID,
 }
 
 impl ConnectionGuard {
-    fn new(connection_tracker: Arc<ConnectionTracker>, connection_id: ConnectionID) -> Self {
+    fn new(connection_tracker: &'static ConnectionTracker, connection_id: ConnectionID) -> Self {
         Self {
             connection_tracker,
             connection_id,
@@ -66,11 +66,11 @@ pub struct ConnectionTracker {
 }
 
 impl ConnectionTracker {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Self {
+    fn new() -> Self {
+        Self {
             next_connection_id: AtomicU64::new(1),
             id_to_connection_info: Mutex::new(HashMap::new()),
-        })
+        }
     }
 
     fn new_connection_id(&self) -> ConnectionID {
@@ -79,7 +79,7 @@ impl ConnectionTracker {
         ConnectionID(id)
     }
 
-    pub fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> ConnectionGuard {
+    pub fn add_connection(&'static self, server_protocol: ServerProtocol) -> ConnectionGuard {
         let connection_id = self.new_connection_id();
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
@@ -93,10 +93,10 @@ impl ConnectionTracker {
             id_to_connection_info.len()
         );
 
-        ConnectionGuard::new(Arc::clone(self), connection_id)
+        ConnectionGuard::new(&self, connection_id)
     }
 
-    fn remove_connection(self: &Arc<Self>, connection_id: ConnectionID) {
+    fn remove_connection(&self, connection_id: ConnectionID) {
         let mut id_to_connection_info = self.id_to_connection_info.lock().unwrap();
 
         id_to_connection_info.remove(&connection_id);
@@ -106,4 +106,18 @@ impl ConnectionTracker {
             id_to_connection_info.len()
         );
     }
+
+    pub fn get_all_connections(&self) -> Vec<ConnectionInfo> {
+        let id_to_connection_info = self.id_to_connection_info.lock().unwrap();
+
+        id_to_connection_info.values().cloned().collect()
+    }
+}
+
+static CONNECTION_TRACKER: OnceCell<ConnectionTracker> = OnceCell::const_new();
+
+pub async fn get_connection_tracker() -> &'static ConnectionTracker {
+    CONNECTION_TRACKER
+        .get_or_init(|| async { ConnectionTracker::new() })
+        .await
 }
