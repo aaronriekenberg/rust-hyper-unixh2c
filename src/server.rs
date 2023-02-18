@@ -20,16 +20,19 @@ use crate::{
 
 pub struct Server {
     handlers: Box<dyn RequestHandler>,
-    connection_tracker: &'static ConnectionTracker,
+    connection_tracker: Arc<ConnectionTracker>,
     request_id_factory: RequestIDFactory,
     server_protocol: ServerProtocol,
 }
 
 impl Server {
-    pub async fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
+    pub fn new(
+        connection_tracker: &Arc<ConnectionTracker>,
+        handlers: Box<dyn RequestHandler>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            connection_tracker: crate::connection::get_connection_tracker().await,
+            connection_tracker: Arc::clone(connection_tracker),
             request_id_factory: RequestIDFactory::new(),
             server_protocol: *crate::config::instance()
                 .server_configuration()
@@ -84,6 +87,8 @@ impl Server {
                 "end connection from {:?} connection_id = {:?} fd = {}",
                 remote_addr, connection_id, fd,
             );
+
+            drop(connection);
         });
     }
 

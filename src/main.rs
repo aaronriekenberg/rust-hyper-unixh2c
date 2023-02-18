@@ -27,9 +27,11 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("read_configuration error")?;
 
-    let handlers = crate::handlers::create_handlers().await?;
+    let connection_tracker = crate::connection::ConnectionTracker::new();
 
-    let server = crate::server::Server::new(handlers).await;
+    let handlers = crate::handlers::create_handlers(&connection_tracker).await?;
+
+    let server = crate::server::Server::new(&connection_tracker, handlers);
 
     server.run().await
 }

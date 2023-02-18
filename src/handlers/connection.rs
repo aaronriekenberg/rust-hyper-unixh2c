@@ -1,4 +1,4 @@
-use std::{convert::From, path::PathBuf};
+use std::{convert::From, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -39,13 +39,13 @@ struct ConnectionInfoResponse {
 }
 
 struct ConnectionInfoHandler {
-    connection_tracker: &'static ConnectionTracker,
+    connection_tracker: Arc<ConnectionTracker>,
 }
 
 impl ConnectionInfoHandler {
-    async fn new() -> Self {
+    fn new(connection_tracker: &Arc<ConnectionTracker>) -> Self {
         Self {
-            connection_tracker: crate::connection::get_connection_tracker().await,
+            connection_tracker: Arc::clone(connection_tracker),
         }
     }
 }
@@ -66,10 +66,10 @@ impl RequestHandler for ConnectionInfoHandler {
     }
 }
 
-pub async fn create_routes() -> Vec<RouteInfo> {
+pub fn create_routes(connection_tracker: &Arc<ConnectionTracker>) -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("connection_info"),
-        handler: Box::new(ConnectionInfoHandler::new().await),
+        handler: Box::new(ConnectionInfoHandler::new(connection_tracker)),
     }]
 }
