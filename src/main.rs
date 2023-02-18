@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
 
     let connection_tracker = crate::connection::ConnectionTracker::new();
 
-    let handlers = crate::handlers::create_handlers(&connection_tracker).await?;
+    let handlers = crate::handlers::create_handlers(&connection_tracker)?;
 
     let server = crate::server::Server::new(&connection_tracker, handlers);
 

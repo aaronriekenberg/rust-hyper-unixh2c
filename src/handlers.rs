@@ -17,7 +17,7 @@ pub trait RequestHandler: Send + Sync {
     async fn handle(&self, request: &HttpRequest) -> Response<Body>;
 }
 
-pub async fn create_handlers(
+pub fn create_handlers(
     connection_tracker: &Arc<ConnectionTracker>,
 ) -> anyhow::Result<Box<dyn RequestHandler>> {
     let mut routes = Vec::new();
