@@ -1,3 +1,5 @@
+use getset::Getters;
+
 use std::{
     collections::HashMap,
     sync::{
@@ -10,17 +12,25 @@ use tokio::time::Instant;
 
 use tracing::info;
 
+use crate::config::ServerProtocol;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ConnectionID(pub u64);
 
+#[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct ConnectionInfo {
+    connection_id: ConnectionID,
     creation_time: Instant,
+    server_protocol: ServerProtocol,
 }
 
 impl ConnectionInfo {
-    fn new() -> Self {
+    fn new(connection_id: ConnectionID, server_protocol: ServerProtocol) -> Self {
         Self {
+            connection_id,
             creation_time: Instant::now(),
+            server_protocol,
         }
     }
 }
@@ -45,7 +55,8 @@ impl ConnectionGuard {
 
 impl Drop for ConnectionGuard {
     fn drop(&mut self) {
-        Arc::clone(&self.connection_tracker).remove_connection(self.connection_id)
+        self.connection_tracker
+            .remove_connection(self.connection_id)
     }
 }
 
@@ -68,12 +79,14 @@ impl ConnectionTracker {
         ConnectionID(id)
     }
 
-    pub fn add_new_connection(self: &Arc<Self>) -> ConnectionGuard {
+    pub fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> ConnectionGuard {
         let connection_id = self.new_connection_id();
+
+        let connection_info = ConnectionInfo::new(connection_id, server_protocol);
 
         let mut id_to_connection_info = self.id_to_connection_info.lock().unwrap();
 
-        id_to_connection_info.insert(connection_id, ConnectionInfo::new());
+        id_to_connection_info.insert(connection_id, connection_info);
 
         info!(
             "add_new_connection id_to_connection_info.len = {}",
@@ -83,7 +96,7 @@ impl ConnectionTracker {
         ConnectionGuard::new(Arc::clone(self), connection_id)
     }
 
-    fn remove_connection(self: Arc<Self>, connection_id: ConnectionID) {
+    fn remove_connection(self: &Arc<Self>, connection_id: ConnectionID) {
         let mut id_to_connection_info = self.id_to_connection_info.lock().unwrap();
 
         id_to_connection_info.remove(&connection_id);
