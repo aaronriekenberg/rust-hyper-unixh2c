@@ -2,8 +2,6 @@ use std::{convert::From, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
-use chrono::prelude::SecondsFormat;
-
 use hyper::{Body, Method, Response};
 
 use serde::Serialize;
@@ -11,7 +9,11 @@ use serde::Serialize;
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
-    handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
+    handlers::{
+        route::RouteInfo,
+        utils::{build_json_response, local_date_time_to_string},
+        HttpRequest, RequestHandler,
+    },
 };
 
 #[derive(Debug, Serialize)]
@@ -25,9 +27,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
         Self {
             connection_id: connection_info.connection_id().0,
-            creation_time: connection_info
-                .creation_time()
-                .to_rfc3339_opts(SecondsFormat::Millis, false),
+            creation_time: local_date_time_to_string(connection_info.creation_time()),
             server_protocol: *connection_info.server_protocol(),
         }
     }

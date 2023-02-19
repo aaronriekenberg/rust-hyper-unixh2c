@@ -4,8 +4,6 @@ use anyhow::Context;
 
 use async_trait::async_trait;
 
-use chrono::prelude::{Local, SecondsFormat};
-
 use hyper::{
     http::{Method, Response, StatusCode},
     Body,
@@ -23,13 +21,12 @@ use serde::Serialize;
 
 use crate::handlers::{
     route::RouteInfo,
-    utils::{build_json_body_response, build_json_response, build_status_code_response},
+    utils::{
+        build_json_body_response, build_json_response, build_status_code_response,
+        current_local_date_time_string,
+    },
     HttpRequest, RequestHandler,
 };
-
-fn current_time_string() -> String {
-    Local::now().to_rfc3339_opts(SecondsFormat::Nanos, true)
-}
 
 struct AllCommandsHandler {
     json_string: String,
@@ -124,7 +121,7 @@ impl RunCommandHandler {
         command_duration: Duration,
     ) -> Response<Body> {
         let response = RunCommandResponse {
-            now: current_time_string(),
+            now: current_local_date_time_string(),
             command_duration_ms: command_duration.as_millis(),
             command_info: &self.command_info,
             command_output: match command_result {
