@@ -27,7 +27,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
             creation_time: connection_info
                 .creation_time()
-                .to_rfc3339_opts(SecondsFormat::Nanos, true),
+                .to_rfc3339_opts(SecondsFormat::Millis, false),
             server_protocol: *connection_info.server_protocol(),
         }
     }

@@ -35,12 +35,12 @@ impl ConnectionInfo {
     }
 }
 
-pub struct ConnectionGuard {
+pub struct Connection {
     connection_tracker: Arc<ConnectionTracker>,
     connection_id: ConnectionID,
 }
 
-impl ConnectionGuard {
+impl Connection {
     fn new(connection_tracker: Arc<ConnectionTracker>, connection_id: ConnectionID) -> Self {
         Self {
             connection_tracker,
@@ -53,7 +53,7 @@ impl ConnectionGuard {
     }
 }
 
-impl Drop for ConnectionGuard {
+impl Drop for Connection {
     fn drop(&mut self) {
         self.connection_tracker
             .remove_connection(self.connection_id)
@@ -79,7 +79,7 @@ impl ConnectionTracker {
         ConnectionID(id)
     }
 
-    pub fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> ConnectionGuard {
+    pub fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> Connection {
         let connection_id = self.new_connection_id();
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
@@ -93,7 +93,9 @@ impl ConnectionTracker {
             id_to_connection_info.len()
         );
 
-        ConnectionGuard::new(Arc::clone(self), connection_id)
+        drop(id_to_connection_info);
+
+        Connection::new(Arc::clone(self), connection_id)
     }
 
     fn remove_connection(&self, connection_id: ConnectionID) {
