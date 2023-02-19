@@ -2,13 +2,15 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
 
 use chrono::prelude::{DateTime, Local};
 
 use getset::Getters;
+
+use tokio::sync::RwLock;
 
 use tracing::debug;
 
@@ -55,21 +57,25 @@ impl Connection {
 
 impl Drop for Connection {
     fn drop(&mut self) {
-        self.connection_tracker
-            .remove_connection(self.connection_id)
+        let connection_tracker = Arc::clone(&self.connection_tracker);
+        let connection_id = self.connection_id;
+
+        tokio::task::spawn(async move {
+            connection_tracker.remove_connection(connection_id).await;
+        });
     }
 }
 
 pub struct ConnectionTracker {
     next_connection_id: AtomicU64,
-    id_to_connection_info: Mutex<HashMap<ConnectionID, ConnectionInfo>>,
+    id_to_connection_info: RwLock<HashMap<ConnectionID, ConnectionInfo>>,
 }
 
 impl ConnectionTracker {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             next_connection_id: AtomicU64::new(1),
-            id_to_connection_info: Mutex::new(HashMap::new()),
+            id_to_connection_info: RwLock::new(HashMap::new()),
         })
     }
 
@@ -79,12 +85,12 @@ impl ConnectionTracker {
         ConnectionID(id)
     }
 
-    pub fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> Connection {
+    pub async fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> Connection {
         let connection_id = self.new_connection_id();
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
 
-        let mut id_to_connection_info = self.id_to_connection_info.lock().unwrap();
+        let mut id_to_connection_info = self.id_to_connection_info.write().await;
 
         id_to_connection_info.insert(connection_id, connection_info);
 
@@ -98,8 +104,8 @@ impl ConnectionTracker {
         Connection::new(Arc::clone(self), connection_id)
     }
 
-    fn remove_connection(&self, connection_id: ConnectionID) {
-        let mut id_to_connection_info = self.id_to_connection_info.lock().unwrap();
+    async fn remove_connection(&self, connection_id: ConnectionID) {
+        let mut id_to_connection_info = self.id_to_connection_info.write().await;
 
         id_to_connection_info.remove(&connection_id);
 
@@ -109,8 +115,8 @@ impl ConnectionTracker {
         );
     }
 
-    pub fn get_all_connections(&self) -> Vec<ConnectionInfo> {
-        let id_to_connection_info = self.id_to_connection_info.lock().unwrap();
+    pub async fn get_all_connections(&self) -> Vec<ConnectionInfo> {
+        let id_to_connection_info = self.id_to_connection_info.read().await;
 
         id_to_connection_info.values().cloned().collect()
     }

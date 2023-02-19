@@ -56,6 +56,7 @@ impl RequestHandler for ConnectionInfoHandler {
         let mut connections: Vec<ConnectionInfoDTO> = self
             .connection_tracker
             .get_all_connections()
+            .await
             .iter()
             .map(|c| c.into())
             .collect();
