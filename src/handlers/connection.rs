@@ -1,4 +1,4 @@
-use std::{convert::From, ops::Sub, path::PathBuf, sync::Arc};
+use std::{convert::From, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -31,8 +31,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
         let now = current_local_date_time();
 
-        let age = now
-            .sub(*connection_info.creation_time())
+        let age = (now - *connection_info.creation_time())
             .to_std()
             .unwrap_or_default();
 
