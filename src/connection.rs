@@ -1,10 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc,
-    },
-};
+use std::{collections::HashMap, sync::Arc};
 
 use chrono::prelude::{DateTime, Local};
 
@@ -66,58 +60,72 @@ impl Drop for Connection {
     }
 }
 
+struct ConnectionTrackerState {
+    next_connection_id: u64,
+    id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
+}
+
+impl ConnectionTrackerState {
+    fn new() -> Self {
+        Self {
+            next_connection_id: 1,
+            id_to_connection_info: HashMap::new(),
+        }
+    }
+
+    fn next_connection_id(&mut self) -> ConnectionID {
+        let connection_id = self.next_connection_id;
+        self.next_connection_id += 1;
+        ConnectionID(connection_id)
+    }
+}
+
 pub struct ConnectionTracker {
-    next_connection_id: AtomicU64,
-    id_to_connection_info: RwLock<HashMap<ConnectionID, ConnectionInfo>>,
+    state: RwLock<ConnectionTrackerState>,
 }
 
 impl ConnectionTracker {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
-            next_connection_id: AtomicU64::new(1),
-            id_to_connection_info: RwLock::new(HashMap::new()),
+            state: RwLock::new(ConnectionTrackerState::new()),
         })
     }
 
-    fn new_connection_id(&self) -> ConnectionID {
-        let id = self.next_connection_id.fetch_add(1, Ordering::Relaxed);
-
-        ConnectionID(id)
-    }
-
     pub async fn add_connection(self: &Arc<Self>, server_protocol: ServerProtocol) -> Connection {
-        let connection_id = self.new_connection_id();
+        let mut state = self.state.write().await;
+
+        let connection_id = state.next_connection_id();
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
 
-        let mut id_to_connection_info = self.id_to_connection_info.write().await;
-
-        id_to_connection_info.insert(connection_id, connection_info);
+        state
+            .id_to_connection_info
+            .insert(connection_id, connection_info);
 
         debug!(
             "add_new_connection id_to_connection_info.len = {}",
-            id_to_connection_info.len()
+            state.id_to_connection_info.len()
         );
 
-        drop(id_to_connection_info);
+        drop(state);
 
         Connection::new(Arc::clone(self), connection_id)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {
-        let mut id_to_connection_info = self.id_to_connection_info.write().await;
+        let mut state = self.state.write().await;
 
-        id_to_connection_info.remove(&connection_id);
+        state.id_to_connection_info.remove(&connection_id);
 
         debug!(
             "remove_connection id_to_connection_info.len = {}",
-            id_to_connection_info.len()
+            state.id_to_connection_info.len()
         );
     }
 
     pub async fn get_all_connections(&self) -> Vec<ConnectionInfo> {
-        let id_to_connection_info = self.id_to_connection_info.read().await;
+        let state = self.state.read().await;
 
-        id_to_connection_info.values().cloned().collect()
+        state.id_to_connection_info.values().cloned().collect()
     }
 }
