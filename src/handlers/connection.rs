@@ -1,4 +1,4 @@
-use std::{convert::From, path::PathBuf, sync::Arc};
+use std::{convert::From, ops::Sub, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -6,12 +6,14 @@ use hyper::{Body, Method, Response};
 
 use serde::Serialize;
 
+use std::time::Duration;
+
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
     handlers::{
         route::RouteInfo,
-        utils::{build_json_response, local_date_time_to_string},
+        utils::{build_json_response, current_local_date_time, local_date_time_to_string},
         HttpRequest, RequestHandler,
     },
 };
@@ -19,16 +21,26 @@ use crate::{
 #[derive(Debug, Serialize)]
 struct ConnectionInfoDTO {
     connection_id: u64,
-    creation_time: String,
     server_protocol: ServerProtocol,
+    creation_time: String,
+    #[serde(with = "humantime_serde")]
+    age: Duration,
 }
 
 impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
-        Self {
+        let now = current_local_date_time();
+
+        let age = now
+            .sub(*connection_info.creation_time())
+            .to_std()
+            .unwrap_or_default();
+
+        ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
-            creation_time: local_date_time_to_string(connection_info.creation_time()),
             server_protocol: *connection_info.server_protocol(),
+            creation_time: local_date_time_to_string(connection_info.creation_time()),
+            age,
         }
     }
 }
