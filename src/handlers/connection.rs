@@ -53,14 +53,16 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let response = ConnectionInfoResponse {
-            connections: self
-                .connection_tracker
-                .get_all_connections()
-                .iter()
-                .map(|c| c.into())
-                .collect(),
-        };
+        let mut connections: Vec<ConnectionInfoDTO> = self
+            .connection_tracker
+            .get_all_connections()
+            .iter()
+            .map(|c| c.into())
+            .collect();
+
+        connections.sort_by_key(|c| c.connection_id);
+
+        let response = ConnectionInfoResponse { connections };
 
         build_json_response(response)
     }
