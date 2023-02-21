@@ -5,6 +5,7 @@ mod connection;
 mod handlers;
 mod request;
 mod server;
+mod time;
 
 use anyhow::Context;
 

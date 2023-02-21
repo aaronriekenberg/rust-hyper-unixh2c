@@ -1,5 +1,3 @@
-use chrono::prelude::{DateTime, Local, SecondsFormat};
-
 use tracing::warn;
 
 use serde::Serialize;
@@ -35,16 +33,4 @@ pub fn build_status_code_response(status_code: StatusCode) -> Response<Body> {
         .status(status_code)
         .body(Body::empty())
         .unwrap()
-}
-
-pub fn current_local_date_time() -> DateTime<Local> {
-    Local::now()
-}
-
-pub fn local_date_time_to_string(local_date_time: &DateTime<Local>) -> String {
-    local_date_time.to_rfc3339_opts(SecondsFormat::Millis, false)
-}
-
-pub fn current_local_date_time_string() -> String {
-    local_date_time_to_string(&current_local_date_time())
 }

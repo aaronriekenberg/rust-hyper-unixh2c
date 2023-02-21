@@ -11,11 +11,8 @@ use std::time::Duration;
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
-    handlers::{
-        route::RouteInfo,
-        utils::{build_json_response, current_local_date_time, local_date_time_to_string},
-        HttpRequest, RequestHandler,
-    },
+    handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
+    time::{current_local_date_time, local_date_time_to_string},
 };
 
 #[derive(Debug, Serialize)]
