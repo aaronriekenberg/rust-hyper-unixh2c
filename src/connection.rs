@@ -1,6 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
-
-use chrono::prelude::{DateTime, Local};
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use getset::Getters;
 
@@ -17,7 +15,7 @@ pub struct ConnectionID(pub u64);
 #[getset(get = "pub")]
 pub struct ConnectionInfo {
     connection_id: ConnectionID,
-    creation_time: DateTime<Local>,
+    creation_time: SystemTime,
     server_protocol: ServerProtocol,
 }
 
@@ -25,7 +23,7 @@ impl ConnectionInfo {
     fn new(connection_id: ConnectionID, server_protocol: ServerProtocol) -> Self {
         Self {
             connection_id,
-            creation_time: Local::now(),
+            creation_time: SystemTime::now(),
             server_protocol,
         }
     }

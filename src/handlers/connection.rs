@@ -12,7 +12,7 @@ use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
-    time::{current_local_date_time, local_date_time_to_string},
+    time::{local_date_time_to_string, LocalDateTime},
 };
 
 #[derive(Debug, Serialize)]
@@ -26,16 +26,18 @@ struct ConnectionInfoDTO {
 
 impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
-        let now = current_local_date_time();
+        let creation_time =
+            local_date_time_to_string(&LocalDateTime::from(*connection_info.creation_time()));
 
-        let age = (now - *connection_info.creation_time())
-            .to_std()
+        let age = connection_info
+            .creation_time()
+            .elapsed()
             .unwrap_or_default();
 
         ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
             server_protocol: *connection_info.server_protocol(),
-            creation_time: local_date_time_to_string(connection_info.creation_time()),
+            creation_time,
             age,
         }
     }

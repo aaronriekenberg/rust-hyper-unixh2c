@@ -1,10 +1,12 @@
 use chrono::prelude::{DateTime, Local, SecondsFormat};
 
-pub fn current_local_date_time() -> DateTime<Local> {
+pub type LocalDateTime = DateTime<Local>;
+
+pub fn current_local_date_time() -> LocalDateTime {
     Local::now()
 }
 
-pub fn local_date_time_to_string(local_date_time: &DateTime<Local>) -> String {
+pub fn local_date_time_to_string(local_date_time: &LocalDateTime) -> String {
     local_date_time.to_rfc3339_opts(SecondsFormat::Millis, false)
 }
 
