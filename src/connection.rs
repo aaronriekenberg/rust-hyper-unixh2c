@@ -1,4 +1,11 @@
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::SystemTime,
+};
 
 use getset::Getters;
 
@@ -17,6 +24,7 @@ pub struct ConnectionInfo {
     connection_id: ConnectionID,
     creation_time: SystemTime,
     server_protocol: ServerProtocol,
+    num_requests: Arc<AtomicU64>,
 }
 
 impl ConnectionInfo {
@@ -25,25 +33,40 @@ impl ConnectionInfo {
             connection_id,
             creation_time: SystemTime::now(),
             server_protocol,
+            num_requests: Arc::new(AtomicU64::new(0)),
         }
+    }
+
+    pub fn load_num_requests(&self) -> u64 {
+        self.num_requests.load(Ordering::Relaxed)
     }
 }
 
 pub struct Connection {
     connection_tracker: Arc<ConnectionTracker>,
     connection_id: ConnectionID,
+    num_requests: Arc<AtomicU64>,
 }
 
 impl Connection {
-    fn new(connection_tracker: Arc<ConnectionTracker>, connection_id: ConnectionID) -> Self {
+    fn new(
+        connection_tracker: Arc<ConnectionTracker>,
+        connection_id: ConnectionID,
+        num_requests: Arc<AtomicU64>,
+    ) -> Self {
         Self {
             connection_tracker,
             connection_id,
+            num_requests,
         }
     }
 
     pub fn connection_id(&self) -> ConnectionID {
         self.connection_id
+    }
+
+    pub fn increment_num_requests(&self) {
+        self.num_requests.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -96,6 +119,8 @@ impl ConnectionTracker {
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
 
+        let num_requests = Arc::clone(connection_info.num_requests());
+
         state
             .id_to_connection_info
             .insert(connection_id, connection_info);
@@ -107,7 +132,7 @@ impl ConnectionTracker {
 
         drop(state);
 
-        Connection::new(Arc::clone(self), connection_id)
+        Connection::new(Arc::clone(self), connection_id, num_requests)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {

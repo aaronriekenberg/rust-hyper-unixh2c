@@ -72,6 +72,8 @@ impl Server {
             let service = service_fn(|request| {
                 let self_clone = Arc::clone(&self);
 
+                connection.increment_num_requests();
+
                 async move { self_clone.handle_request(connection_id, request).await }
             });
 

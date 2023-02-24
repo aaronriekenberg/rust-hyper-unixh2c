@@ -22,23 +22,22 @@ struct ConnectionInfoDTO {
     creation_time: String,
     #[serde(with = "humantime_serde")]
     age: Duration,
+    num_requests: u64,
 }
 
 impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
-        let creation_time =
-            local_date_time_to_string(&LocalDateTime::from(*connection_info.creation_time()));
-
-        let age = connection_info
-            .creation_time()
-            .elapsed()
-            .unwrap_or_default();
-
         ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
             server_protocol: *connection_info.server_protocol(),
-            creation_time,
-            age,
+            creation_time: local_date_time_to_string(&LocalDateTime::from(
+                *connection_info.creation_time(),
+            )),
+            age: connection_info
+                .creation_time()
+                .elapsed()
+                .unwrap_or_default(),
+            num_requests: connection_info.load_num_requests(),
         }
     }
 }
