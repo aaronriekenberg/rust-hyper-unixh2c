@@ -44,25 +44,25 @@ impl ConnectionInfo {
 
 pub struct Connection {
     connection_tracker: Arc<ConnectionTracker>,
-    connection_id: ConnectionID,
+    id: ConnectionID,
     num_requests: Arc<AtomicU64>,
 }
 
 impl Connection {
     fn new(
         connection_tracker: Arc<ConnectionTracker>,
-        connection_id: ConnectionID,
+        id: ConnectionID,
         num_requests: Arc<AtomicU64>,
     ) -> Self {
         Self {
             connection_tracker,
-            connection_id,
+            id,
             num_requests,
         }
     }
 
-    pub fn connection_id(&self) -> ConnectionID {
-        self.connection_id
+    pub fn id(&self) -> ConnectionID {
+        self.id
     }
 
     pub fn increment_num_requests(&self) {
@@ -73,10 +73,10 @@ impl Connection {
 impl Drop for Connection {
     fn drop(&mut self) {
         let connection_tracker = Arc::clone(&self.connection_tracker);
-        let connection_id = self.connection_id;
+        let id = self.id;
 
         tokio::task::spawn(async move {
-            connection_tracker.remove_connection(connection_id).await;
+            connection_tracker.remove_connection(id).await;
         });
     }
 }

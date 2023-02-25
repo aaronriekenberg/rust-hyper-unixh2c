@@ -9,7 +9,7 @@ use tracing::{debug, info};
 
 use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
 
-use std::{convert::Infallible, os::fd::AsRawFd, sync::Arc};
+use std::{convert::Infallible, sync::Arc};
 
 use crate::{
     config::ServerProtocol,
@@ -55,24 +55,23 @@ impl Server {
 
     fn handle_connection(self: Arc<Self>, unix_stream: UnixStream, remote_addr: SocketAddr) {
         tokio::task::spawn(async move {
-            let fd = unix_stream.as_raw_fd();
-
             let connection = self
                 .connection_tracker
                 .add_connection(self.server_protocol)
                 .await;
 
-            let connection_id = connection.connection_id();
-
             info!(
-                "got connection from {:?} connection_id = {:?} fd = {}",
-                remote_addr, connection_id, fd,
+                "got connection from {:?} connection_id = {:?}",
+                remote_addr,
+                connection.id(),
             );
 
             let service = service_fn(|request| {
                 let self_clone = Arc::clone(&self);
 
                 connection.increment_num_requests();
+
+                let connection_id = connection.id();
 
                 async move { self_clone.handle_request(connection_id, request).await }
             });
@@ -89,11 +88,10 @@ impl Server {
             }
 
             info!(
-                "end connection from {:?} connection_id = {:?} fd = {}",
-                remote_addr, connection_id, fd,
+                "end connection from {:?} connection_id = {:?}",
+                remote_addr,
+                connection.id(),
             );
-
-            drop(connection);
         });
     }
 
@@ -107,10 +105,9 @@ impl Server {
         debug!("remove_result = {:?}", remove_result);
 
         let unix_listener = UnixListener::bind(&path)?;
-        let fd = unix_listener.as_raw_fd();
 
         let local_addr = unix_listener.local_addr()?;
-        info!("listening on {:?} fd = {}", local_addr, fd);
+        info!("listening on {:?}", local_addr);
 
         loop {
             let (unix_stream, remote_addr) = unix_listener.accept().await?;
