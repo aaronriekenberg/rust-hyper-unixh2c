@@ -27,16 +27,23 @@ struct ConnectionInfoDTO {
 
 impl From<&ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: &ConnectionInfo) -> Self {
+        let age = connection_info
+            .creation_time()
+            .elapsed()
+            .unwrap_or_default();
+
+        // truncate to milliseconds
+        let age = (age.as_secs_f64() * 1000.0).trunc() / 1000.0;
+
+        let age = Duration::from_secs_f64(age);
+
         ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
             server_protocol: *connection_info.server_protocol(),
             creation_time: local_date_time_to_string(&LocalDateTime::from(
                 *connection_info.creation_time(),
             )),
-            age: connection_info
-                .creation_time()
-                .elapsed()
-                .unwrap_or_default(),
+            age,
             num_requests: connection_info.load_num_requests(),
         }
     }
