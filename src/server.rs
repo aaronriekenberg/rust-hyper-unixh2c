@@ -12,7 +12,7 @@ use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
 use std::{convert::Infallible, sync::Arc};
 
 use crate::{
-    config::ServerProtocol,
+    config::{ServerConfiguration, ServerProtocol},
     connection::{ConnectionID, ConnectionTracker},
     handlers::RequestHandler,
     request::{HttpRequest, RequestIDFactory},
@@ -22,7 +22,7 @@ pub struct Server {
     handlers: Box<dyn RequestHandler>,
     connection_tracker: Arc<ConnectionTracker>,
     request_id_factory: RequestIDFactory,
-    server_protocol: ServerProtocol,
+    server_configuration: &'static ServerConfiguration,
 }
 
 impl Server {
@@ -34,9 +34,7 @@ impl Server {
             handlers,
             connection_tracker: Arc::clone(connection_tracker),
             request_id_factory: RequestIDFactory::new(),
-            server_protocol: *crate::config::instance()
-                .server_configuration()
-                .server_protocol(),
+            server_configuration: crate::config::instance().server_configuration(),
         })
     }
 
@@ -57,7 +55,7 @@ impl Server {
         tokio::task::spawn(async move {
             let connection = self
                 .connection_tracker
-                .add_connection(self.server_protocol)
+                .add_connection(*self.server_configuration.server_protocol())
                 .await;
 
             info!(
@@ -78,7 +76,7 @@ impl Server {
 
             let mut http = Http::new();
 
-            match self.server_protocol {
+            match self.server_configuration.server_protocol() {
                 ServerProtocol::HTTP1 => http.http1_only(true),
                 ServerProtocol::HTTP2 => http.http2_only(true),
             };
@@ -96,9 +94,7 @@ impl Server {
     }
 
     pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
-        let path = crate::config::instance()
-            .server_configuration()
-            .bind_address();
+        let path = self.server_configuration.bind_address();
 
         // do not fail on remove error, the path may not exist.
         let remove_result = tokio::fs::remove_file(path).await;
