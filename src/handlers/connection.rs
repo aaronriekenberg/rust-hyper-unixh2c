@@ -32,10 +32,8 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
             .elapsed()
             .unwrap_or_default();
 
-        // truncate to milliseconds
-        let age = (age.as_secs_f64() * 1000.0).trunc() / 1000.0;
-
-        let age = Duration::from_secs_f64(age);
+        // truncate to seconds
+        let age = Duration::from_secs(age.as_secs());
 
         ConnectionInfoDTO {
             connection_id: connection_info.connection_id().0,
