@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicUsize, Ordering},
         Arc,
     },
     time::SystemTime,
@@ -16,7 +16,7 @@ use tracing::debug;
 use crate::config::ServerProtocol;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ConnectionID(pub u64);
+pub struct ConnectionID(pub usize);
 
 #[derive(Clone, Debug, Getters)]
 #[getset(get = "pub")]
@@ -24,7 +24,7 @@ pub struct ConnectionInfo {
     connection_id: ConnectionID,
     creation_time: SystemTime,
     server_protocol: ServerProtocol,
-    num_requests: Arc<AtomicU64>,
+    num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionInfo {
@@ -33,11 +33,11 @@ impl ConnectionInfo {
             connection_id,
             creation_time: SystemTime::now(),
             server_protocol,
-            num_requests: Arc::new(AtomicU64::new(0)),
+            num_requests: Arc::new(AtomicUsize::new(0)),
         }
     }
 
-    pub fn load_num_requests(&self) -> u64 {
+    pub fn load_num_requests(&self) -> usize {
         self.num_requests.load(Ordering::Relaxed)
     }
 }
@@ -45,14 +45,14 @@ impl ConnectionInfo {
 pub struct Connection {
     connection_tracker: Arc<ConnectionTracker>,
     id: ConnectionID,
-    num_requests: Arc<AtomicU64>,
+    num_requests: Arc<AtomicUsize>,
 }
 
 impl Connection {
     fn new(
         connection_tracker: Arc<ConnectionTracker>,
         id: ConnectionID,
-        num_requests: Arc<AtomicU64>,
+        num_requests: Arc<AtomicUsize>,
     ) -> Self {
         Self {
             connection_tracker,
@@ -82,7 +82,7 @@ impl Drop for Connection {
 }
 
 struct ConnectionTrackerState {
-    next_connection_id: u64,
+    next_connection_id: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 

@@ -17,12 +17,12 @@ use crate::{
 
 #[derive(Debug, Serialize)]
 struct ConnectionInfoDTO {
-    connection_id: u64,
+    connection_id: usize,
     server_protocol: ServerProtocol,
     creation_time: String,
     #[serde(with = "humantime_serde")]
     age: Duration,
-    num_requests: u64,
+    num_requests: usize,
 }
 
 impl From<&ConnectionInfo> for ConnectionInfoDTO {

@@ -10,8 +10,8 @@ use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest,
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
-    connection_id: u64,
-    request_id: u64,
+    connection_id: usize,
+    request_id: usize,
     method: &'a str,
     version: &'a str,
     request_uri_path: &'a str,

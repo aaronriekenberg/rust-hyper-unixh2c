@@ -2,12 +2,12 @@ use getset::Getters;
 
 use hyper::{http::Request, Body};
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::connection::ConnectionID;
 
 #[derive(Clone, Copy, Debug)]
-pub struct RequestID(pub u64);
+pub struct RequestID(pub usize);
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -32,13 +32,13 @@ impl HttpRequest {
 }
 
 pub struct RequestIDFactory {
-    next_request_id: AtomicU64,
+    next_request_id: AtomicUsize,
 }
 
 impl RequestIDFactory {
     pub fn new() -> Self {
         Self {
-            next_request_id: AtomicU64::new(1),
+            next_request_id: AtomicUsize::new(1),
         }
     }
 
