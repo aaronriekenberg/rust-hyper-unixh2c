@@ -151,12 +151,12 @@ impl ConnectionTracker {
 
         state.id_to_connection_info.values().cloned().collect()
     }
-}
 
-pub async fn connection_tracker_instance() -> &'static ConnectionTracker {
-    static INSTANCE: OnceCell<ConnectionTracker> = OnceCell::const_new();
+    pub async fn instance() -> &'static ConnectionTracker {
+        static INSTANCE: OnceCell<ConnectionTracker> = OnceCell::const_new();
 
-    INSTANCE
-        .get_or_init(|| async move { ConnectionTracker::new() })
-        .await
+        INSTANCE
+            .get_or_init(|| async move { ConnectionTracker::new() })
+            .await
+    }
 }

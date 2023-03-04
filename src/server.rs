@@ -29,7 +29,7 @@ impl Server {
     pub async fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            connection_tracker: crate::connection::connection_tracker_instance().await,
+            connection_tracker: ConnectionTracker::instance().await,
             request_id_factory: RequestIDFactory::new(),
             server_configuration: crate::config::instance().server_configuration(),
         })

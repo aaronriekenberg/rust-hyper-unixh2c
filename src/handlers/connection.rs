@@ -59,7 +59,7 @@ struct ConnectionInfoHandler {
 impl ConnectionInfoHandler {
     async fn new() -> Self {
         Self {
-            connection_tracker: crate::connection::connection_tracker_instance().await,
+            connection_tracker: ConnectionTracker::instance().await,
         }
     }
 }
