@@ -71,7 +71,7 @@ impl RequestHandler for ConnectionInfoHandler {
                 .get_all_connections()
                 .await
                 .iter()
-                .map(|c| (c.connection_id().0, c.into()))
+                .map(|c| (c.id().0, c.into()))
                 .collect(),
         };
 

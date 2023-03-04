@@ -21,16 +21,16 @@ pub struct ConnectionID(pub usize);
 #[derive(Clone, Debug, Getters)]
 #[getset(get = "pub")]
 pub struct ConnectionInfo {
-    connection_id: ConnectionID,
+    id: ConnectionID,
     creation_time: SystemTime,
     server_protocol: ServerProtocol,
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionInfo {
-    fn new(connection_id: ConnectionID, server_protocol: ServerProtocol) -> Self {
+    fn new(id: ConnectionID, server_protocol: ServerProtocol) -> Self {
         Self {
-            connection_id,
+            id,
             creation_time: SystemTime::now(),
             server_protocol,
             num_requests: Arc::new(AtomicUsize::new(0)),
