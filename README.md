@@ -12,3 +12,10 @@ Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
 ```
 
 This app runs in about 3.5 megabytes of resident memory on a 64-bit Raspberry Pi.
+
+```
+$ ps -eo pid,pmem,rss,vsz,comm,command --sort -rs
+
+    PID %MEM   RSS    VSZ COMMAND         COMMAND
+  16285  0.3  3324 478072 rust-hyper-unix /home/aaron/rust-hyper-unixh2c/target/release/rust-hyper-unixh2c ./config/config.json
+```
