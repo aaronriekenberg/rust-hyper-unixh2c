@@ -20,19 +20,16 @@ use crate::{
 
 pub struct Server {
     handlers: Box<dyn RequestHandler>,
-    connection_tracker: Arc<ConnectionTracker>,
+    connection_tracker: &'static ConnectionTracker,
     request_id_factory: RequestIDFactory,
     server_configuration: &'static ServerConfiguration,
 }
 
 impl Server {
-    pub fn new(
-        connection_tracker: &Arc<ConnectionTracker>,
-        handlers: Box<dyn RequestHandler>,
-    ) -> Arc<Self> {
+    pub async fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            connection_tracker: Arc::clone(connection_tracker),
+            connection_tracker: crate::connection::connection_tracker_instance().await,
             request_id_factory: RequestIDFactory::new(),
             server_configuration: crate::config::instance().server_configuration(),
         })

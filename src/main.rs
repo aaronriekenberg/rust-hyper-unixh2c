@@ -3,7 +3,6 @@
 
 mod config;
 mod connection;
-mod context;
 mod handlers;
 mod request;
 mod server;
@@ -30,11 +29,9 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("read_configuration error")?;
 
-    let app_context = crate::context::AppContext::new();
+    let handlers = handlers::create_handlers().await?;
 
-    let handlers = handlers::create_handlers(&app_context)?;
-
-    let server = crate::server::Server::new(app_context.connection_tracker(), handlers);
+    let server = crate::server::Server::new(handlers).await;
 
     server.run().await
 }

@@ -9,7 +9,7 @@ use std::{
 
 use getset::Getters;
 
-use tokio::sync::RwLock;
+use tokio::sync::{OnceCell, RwLock};
 
 use tracing::debug;
 
@@ -43,14 +43,14 @@ impl ConnectionInfo {
 }
 
 pub struct ConnectionGuard {
-    connection_tracker: Arc<ConnectionTracker>,
+    connection_tracker: &'static ConnectionTracker,
     id: ConnectionID,
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionGuard {
     fn new(
-        connection_tracker: Arc<ConnectionTracker>,
+        connection_tracker: &'static ConnectionTracker,
         id: ConnectionID,
         num_requests: Arc<AtomicUsize>,
     ) -> Self {
@@ -72,7 +72,7 @@ impl ConnectionGuard {
 
 impl Drop for ConnectionGuard {
     fn drop(&mut self) {
-        let connection_tracker = Arc::clone(&self.connection_tracker);
+        let connection_tracker = self.connection_tracker;
         let id = self.id;
 
         tokio::task::spawn(async move {
@@ -106,16 +106,13 @@ pub struct ConnectionTracker {
 }
 
 impl ConnectionTracker {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Self {
+    fn new() -> Self {
+        Self {
             state: RwLock::new(ConnectionTrackerState::new()),
-        })
+        }
     }
 
-    pub async fn add_connection(
-        self: &Arc<Self>,
-        server_protocol: ServerProtocol,
-    ) -> ConnectionGuard {
+    pub async fn add_connection(&'static self, server_protocol: ServerProtocol) -> ConnectionGuard {
         let mut state = self.state.write().await;
 
         let connection_id = state.next_connection_id();
@@ -135,7 +132,7 @@ impl ConnectionTracker {
 
         drop(state);
 
-        ConnectionGuard::new(Arc::clone(self), connection_id, num_requests)
+        ConnectionGuard::new(self, connection_id, num_requests)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {
@@ -154,4 +151,12 @@ impl ConnectionTracker {
 
         state.id_to_connection_info.values().cloned().collect()
     }
+}
+
+pub async fn connection_tracker_instance() -> &'static ConnectionTracker {
+    static INSTANCE: OnceCell<ConnectionTracker> = OnceCell::const_new();
+
+    INSTANCE
+        .get_or_init(|| async move { ConnectionTracker::new() })
+        .await
 }

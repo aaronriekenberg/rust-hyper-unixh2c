@@ -1,4 +1,4 @@
-use std::{convert::From, path::PathBuf, sync::Arc};
+use std::{convert::From, path::PathBuf};
 
 use async_trait::async_trait;
 
@@ -11,7 +11,6 @@ use std::time::Duration;
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
-    context::AppContext,
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
 };
@@ -54,13 +53,13 @@ struct ConnectionInfoResponse {
 }
 
 struct ConnectionInfoHandler {
-    connection_tracker: Arc<ConnectionTracker>,
+    connection_tracker: &'static ConnectionTracker,
 }
 
 impl ConnectionInfoHandler {
-    fn new(connection_tracker: &Arc<ConnectionTracker>) -> Self {
+    async fn new() -> Self {
         Self {
-            connection_tracker: Arc::clone(connection_tracker),
+            connection_tracker: crate::connection::connection_tracker_instance().await,
         }
     }
 }
@@ -84,10 +83,10 @@ impl RequestHandler for ConnectionInfoHandler {
     }
 }
 
-pub fn create_routes(app_context: &Arc<AppContext>) -> Vec<RouteInfo> {
+pub async fn create_routes() -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("connection_info"),
-        handler: Box::new(ConnectionInfoHandler::new(app_context.connection_tracker())),
+        handler: Box::new(ConnectionInfoHandler::new().await),
     }]
 }
