@@ -11,7 +11,7 @@ Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
        }
 ```
 
-This app runs in about 3.5 megabytes of resident memory on a 64-bit Raspberry Pi.
+This app runs in about 3.5 megabytes of resident memory (RSS) on a 64-bit Raspberry Pi.
 
 ```
 $ ps -eo pid,pmem,rss,vsz,comm,command --sort -rs
