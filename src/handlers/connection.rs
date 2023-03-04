@@ -11,6 +11,7 @@ use std::time::Duration;
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionInfo, ConnectionTracker},
+    context::AppContext,
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
 };
@@ -83,10 +84,10 @@ impl RequestHandler for ConnectionInfoHandler {
     }
 }
 
-pub fn create_routes(connection_tracker: &Arc<ConnectionTracker>) -> Vec<RouteInfo> {
+pub fn create_routes(app_context: &Arc<AppContext>) -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("connection_info"),
-        handler: Box::new(ConnectionInfoHandler::new(connection_tracker)),
+        handler: Box::new(ConnectionInfoHandler::new(app_context.connection_tracker())),
     }]
 }
