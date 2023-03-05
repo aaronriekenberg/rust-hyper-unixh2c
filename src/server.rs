@@ -5,7 +5,7 @@ use hyper::{
     Body,
 };
 
-use tracing::{debug, info, info_span, Instrument};
+use tracing::{debug, info, instrument, Instrument};
 
 use tokio::net::{UnixListener, UnixStream};
 
@@ -35,6 +35,7 @@ impl Server {
         })
     }
 
+    #[instrument(skip_all, fields(request_id = request_id.0))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
@@ -51,6 +52,7 @@ impl Server {
         Ok(result)
     }
 
+    #[instrument(skip_all, fields(connection_id = connection.id().0))]
     async fn handle_connection(
         self: Arc<Self>,
         unix_stream: UnixStream,
@@ -63,11 +65,9 @@ impl Server {
 
             let request_id = self.request_id_factory.new_request_id();
 
-            let request_span = info_span!("handle_request", request_id = request_id.0);
-
             Arc::clone(&self)
                 .handle_request(connection.id(), request_id, hyper_request)
-                .instrument(request_span)
+                .in_current_span()
         });
 
         let mut http = Http::new();
@@ -104,14 +104,7 @@ impl Server {
                 .add_connection(*self.server_configuration.server_protocol())
                 .await;
 
-            let connection_span =
-                info_span!("handle_connection", connection_id = connection.id().0);
-
-            tokio::spawn(
-                Arc::clone(&self)
-                    .handle_connection(unix_stream, connection)
-                    .instrument(connection_span),
-            );
+            tokio::spawn(Arc::clone(&self).handle_connection(unix_stream, connection));
         }
     }
 }
