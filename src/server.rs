@@ -5,17 +5,17 @@ use hyper::{
     Body,
 };
 
-use tracing::{debug, info};
+use tracing::{debug, info, instrument, Instrument, Span};
 
-use tokio::net::{unix::SocketAddr, UnixListener, UnixStream};
+use tokio::net::{UnixListener, UnixStream};
 
 use std::{convert::Infallible, sync::Arc};
 
 use crate::{
     config::{ServerConfiguration, ServerProtocol},
-    connection::{ConnectionID, ConnectionTracker},
+    connection::{ConnectionGuard, ConnectionID, ConnectionTracker},
     handlers::RequestHandler,
-    request::{HttpRequest, RequestIDFactory},
+    request::{HttpRequest, RequestID, RequestIDFactory},
 };
 
 pub struct Server {
@@ -35,59 +35,64 @@ impl Server {
         })
     }
 
+    #[instrument(skip_all, fields(request_id = request_id.0))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
+        request_id: RequestID,
         hyper_request: Request<Body>,
     ) -> Result<Response<Body>, Infallible> {
-        let request_id = self.request_id_factory.new_request_id();
+        debug!("begin handle_request");
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
 
         let result = self.handlers.handle(&http_request).await;
+
+        debug!("end handle_request");
         Ok(result)
     }
 
-    fn handle_connection(self: Arc<Self>, unix_stream: UnixStream, remote_addr: SocketAddr) {
-        tokio::task::spawn(async move {
-            let connection = self
-                .connection_tracker
-                .add_connection(*self.server_configuration.server_protocol())
-                .await;
+    #[instrument(skip_all, fields(connection_id = connection.id().0))]
+    async fn handle_connection(
+        self: Arc<Self>,
+        unix_stream: UnixStream,
+        connection: ConnectionGuard,
+    ) {
+        info!("begin handle_connection");
 
-            info!(
-                "got connection from {:?} connection_id = {:?}",
-                remote_addr,
-                connection.id(),
-            );
+        let span = Span::current();
 
-            let service = service_fn(|request| {
-                let self_clone = Arc::clone(&self);
+        let service = service_fn(|hyper_request| {
+            let self_clone = Arc::clone(&self);
 
-                connection.increment_num_requests();
+            connection.increment_num_requests();
 
-                let connection_id = connection.id();
+            let connection_id = connection.id();
 
-                async move { self_clone.handle_request(connection_id, request).await }
-            });
+            let request_id = self.request_id_factory.new_request_id();
 
-            let mut http = Http::new();
+            let span_clone = span.clone();
 
-            match self.server_configuration.server_protocol() {
-                ServerProtocol::HTTP1 => http.http1_only(true),
-                ServerProtocol::HTTP2 => http.http2_only(true),
-            };
-
-            if let Err(http_err) = http.serve_connection(unix_stream, service).await {
-                info!("Error while serving HTTP connection: {:?}", http_err);
+            async move {
+                self_clone
+                    .handle_request(connection_id, request_id, hyper_request)
+                    .instrument(span_clone)
+                    .await
             }
-
-            info!(
-                "end connection from {:?} connection_id = {:?}",
-                remote_addr,
-                connection.id(),
-            );
         });
+
+        let mut http = Http::new();
+
+        match self.server_configuration.server_protocol() {
+            ServerProtocol::HTTP1 => http.http1_only(true),
+            ServerProtocol::HTTP2 => http.http2_only(true),
+        };
+
+        if let Err(http_err) = http.serve_connection(unix_stream, service).await {
+            info!("Error while serving HTTP connection: {:?}", http_err);
+        }
+
+        info!("end handle_connection");
     }
 
     pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
@@ -103,9 +108,17 @@ impl Server {
         info!("listening on {:?}", local_addr);
 
         loop {
-            let (unix_stream, remote_addr) = unix_listener.accept().await?;
+            let (unix_stream, _remote_addr) = unix_listener.accept().await?;
 
-            Arc::clone(&self).handle_connection(unix_stream, remote_addr);
+            let connection = self
+                .connection_tracker
+                .add_connection(*self.server_configuration.server_protocol())
+                .await;
+
+            let self_clone = Arc::clone(&self);
+            tokio::spawn(
+                async move { self_clone.handle_connection(unix_stream, connection).await },
+            );
         }
     }
 }

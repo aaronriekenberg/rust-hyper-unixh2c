@@ -10,6 +10,8 @@ use async_trait::async_trait;
 
 use hyper::{http::Method, Body, Response};
 
+use tracing::debug;
+
 use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
 
 pub struct RouteInfo {
@@ -78,12 +80,17 @@ impl Router {
 #[async_trait]
 impl RequestHandler for Router {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+        debug!("begin handle");
+
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
-        match handler_option {
+        let response = match handler_option {
             None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
             Some(handler) => handler.handle(&request).await,
-        }
+        };
+
+        debug!("end handle");
+        response
     }
 }
 
