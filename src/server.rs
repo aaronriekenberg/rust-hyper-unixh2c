@@ -5,7 +5,7 @@ use hyper::{
     Body,
 };
 
-use tracing::{debug, info, instrument, Instrument, Span};
+use tracing::{debug, info, info_span, Instrument};
 
 use tokio::net::{UnixListener, UnixStream};
 
@@ -35,7 +35,6 @@ impl Server {
         })
     }
 
-    #[instrument(skip_all, fields(request_id = request_id.0))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
@@ -52,7 +51,6 @@ impl Server {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(connection_id = connection.id().0))]
     async fn handle_connection(
         self: Arc<Self>,
         unix_stream: UnixStream,
@@ -60,25 +58,16 @@ impl Server {
     ) {
         info!("begin handle_connection");
 
-        let span = Span::current();
-
         let service = service_fn(|hyper_request| {
-            let self_clone = Arc::clone(&self);
-
             connection.increment_num_requests();
-
-            let connection_id = connection.id();
 
             let request_id = self.request_id_factory.new_request_id();
 
-            let span_clone = span.clone();
+            let request_span = info_span!("handle_request", request_id = request_id.0);
 
-            async move {
-                self_clone
-                    .handle_request(connection_id, request_id, hyper_request)
-                    .instrument(span_clone)
-                    .await
-            }
+            Arc::clone(&self)
+                .handle_request(connection.id(), request_id, hyper_request)
+                .instrument(request_span)
         });
 
         let mut http = Http::new();
@@ -115,9 +104,13 @@ impl Server {
                 .add_connection(*self.server_configuration.server_protocol())
                 .await;
 
-            let self_clone = Arc::clone(&self);
+            let connection_span =
+                info_span!("handle_connection", connection_id = connection.id().0);
+
             tokio::spawn(
-                async move { self_clone.handle_connection(unix_stream, connection).await },
+                Arc::clone(&self)
+                    .handle_connection(unix_stream, connection)
+                    .instrument(connection_span),
             );
         }
     }
