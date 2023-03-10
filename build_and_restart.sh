@@ -6,6 +6,8 @@ systemctl --user stop rust-hyper-unixh2c.service
 
 git pull -v
 
+export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
 time cargo build -v --release
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
