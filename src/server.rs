@@ -1,6 +1,6 @@
 use hyper::{
     http::{Request, Response},
-    server::conn::Http,
+    server::conn,
     service::service_fn,
     Body,
 };
@@ -70,14 +70,18 @@ impl Server {
                 .in_current_span()
         });
 
-        let mut http = Http::new();
-
-        match self.server_configuration.server_protocol() {
-            ServerProtocol::HTTP1 => http.http1_only(true),
-            ServerProtocol::HTTP2 => http.http2_only(true),
-        };
-
-        if let Err(http_err) = http.serve_connection(unix_stream, service).await {
+        if let Err(http_err) = match self.server_configuration.server_protocol() {
+            ServerProtocol::HTTP1 => {
+                conn::http1::Builder::new()
+                    .serve_connection(unix_stream, service)
+                    .await
+            }
+            ServerProtocol::HTTP2 => {
+                conn::http2::Builder::new(TokioExecutor)
+                    .serve_connection(unix_stream, service)
+                    .await
+            }
+        } {
             info!("Error while serving HTTP connection: {:?}", http_err);
         }
 
@@ -104,7 +108,20 @@ impl Server {
                 .add_connection(*self.server_configuration.server_protocol())
                 .await;
 
-            tokio::spawn(Arc::clone(&self).handle_connection(unix_stream, connection));
+            tokio::task::spawn(Arc::clone(&self).handle_connection(unix_stream, connection));
         }
+    }
+}
+
+#[derive(Clone)]
+struct TokioExecutor;
+
+impl<F> hyper::rt::Executor<F> for TokioExecutor
+where
+    F: std::future::Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        tokio::task::spawn(fut);
     }
 }
