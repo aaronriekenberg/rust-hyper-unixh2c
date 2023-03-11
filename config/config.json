@@ -79,6 +79,17 @@
                 ]
             },
             {
+                "id": "top_ores",
+                "description": "top -o RES",
+                "command": "/usr/bin/top",
+                "args": [
+                    "-b",
+                    "-n1",
+                    "-o",
+                    "RES"
+                ]
+            },
+            {
                 "id": "uptime",
                 "description": "uptime",
                 "command": "/usr/bin/uptime"
