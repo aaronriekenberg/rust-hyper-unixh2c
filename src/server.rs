@@ -35,7 +35,7 @@ impl Server {
         })
     }
 
-    #[instrument(skip_all, fields(request_id = request_id.0))]
+    #[instrument(skip_all, fields(req_id = request_id.0))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
@@ -52,7 +52,7 @@ impl Server {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(connection_id = connection.id().0))]
+    #[instrument(skip_all, fields(conn_id = connection.id().0))]
     async fn handle_connection(
         self: Arc<Self>,
         unix_stream: UnixStream,
@@ -72,17 +72,23 @@ impl Server {
 
         if let Err(http_err) = match self.server_configuration.server_protocol() {
             ServerProtocol::HTTP1 => {
+                debug!("serving HTTP1 connection");
                 conn::http1::Builder::new()
                     .serve_connection(unix_stream, service)
                     .await
             }
             ServerProtocol::HTTP2 => {
+                debug!("serving HTTP2 connection");
                 conn::http2::Builder::new(TokioExecutor)
                     .serve_connection(unix_stream, service)
                     .await
             }
         } {
-            info!("Error while serving HTTP connection: {:?}", http_err);
+            info!(
+                "Error while serving {:?} connection: {:?}",
+                self.server_configuration.server_protocol(),
+                http_err
+            );
         }
 
         info!("end handle_connection");
