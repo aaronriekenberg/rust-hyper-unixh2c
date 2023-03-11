@@ -65,6 +65,11 @@
                 "command": "/home/aaron/repo/raspberrypi/pitemp.sh"
             },
             {
+                "id": "pithrottle",
+                "description": "pithrottle",
+                "command": "/home/aaron/repo/raspberrypi/pithrottle.sh"
+            },
+            {
                 "id": "top",
                 "description": "top",
                 "command": "/usr/bin/top",
