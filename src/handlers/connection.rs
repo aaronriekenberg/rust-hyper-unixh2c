@@ -68,7 +68,7 @@ impl RequestHandler for ConnectionInfoHandler {
         let response = ConnectionInfoResponse {
             connections: self
                 .connection_tracker
-                .get_all_connections()
+                .all_connections()
                 .await
                 .iter()
                 .map(|c| (c.id().0, c.into()))

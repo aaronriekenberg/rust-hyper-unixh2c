@@ -144,7 +144,7 @@ impl ConnectionTracker {
         );
     }
 
-    pub async fn get_all_connections(&self) -> Vec<ConnectionInfo> {
+    pub async fn all_connections(&self) -> Vec<ConnectionInfo> {
         let state = self.state.read().await;
 
         state.id_to_connection_info.values().cloned().collect()
