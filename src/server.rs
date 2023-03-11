@@ -1,6 +1,7 @@
 use hyper::{
     http::{Request, Response},
-    server::conn,
+    server::conn::http1::Builder as HyperHTTP1Builder,
+    server::conn::http2::Builder as HyperHTTP2Builder,
     service::service_fn,
     Body,
 };
@@ -73,13 +74,13 @@ impl Server {
         if let Err(http_err) = match self.server_configuration.server_protocol() {
             ServerProtocol::HTTP1 => {
                 debug!("serving HTTP1 connection");
-                conn::http1::Builder::new()
+                HyperHTTP1Builder::new()
                     .serve_connection(unix_stream, service)
                     .await
             }
             ServerProtocol::HTTP2 => {
                 debug!("serving HTTP2 connection");
-                conn::http2::Builder::new(TokioExecutor)
+                HyperHTTP2Builder::new(TokioExecutor)
                     .serve_connection(unix_stream, service)
                     .await
             }
