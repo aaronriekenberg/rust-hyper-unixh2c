@@ -130,8 +130,6 @@ impl ConnectionTracker {
             state.id_to_connection_info.len()
         );
 
-        drop(state);
-
         ConnectionGuard::new(self, connection_id, num_requests)
     }
 
