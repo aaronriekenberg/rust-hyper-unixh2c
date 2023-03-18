@@ -6,7 +6,7 @@ systemctl --user stop rust-hyper-unixh2c.service
 
 git pull -v
 
-RELEASE=$(git describe --abbrev=0 --tags # gets tag from current branch)
+RELEASE=$(git describe --abbrev=0 --tags)
 echo "RELEASE=$RELEASE"
 
 rm -fr target
