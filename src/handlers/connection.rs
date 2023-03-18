@@ -6,7 +6,7 @@ use hyper::{Body, Method, Response};
 
 use serde::Serialize;
 
-use std::{collections::BTreeMap, time::Duration};
+use std::time::Duration;
 
 use crate::{
     config::ServerProtocol,
@@ -17,6 +17,7 @@ use crate::{
 
 #[derive(Debug, Serialize)]
 struct ConnectionInfoDTO {
+    id: usize,
     server_protocol: ServerProtocol,
     creation_time: String,
     #[serde(with = "humantime_serde")]
@@ -35,6 +36,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
         let age = Duration::from_secs(age.as_secs());
 
         ConnectionInfoDTO {
+            id: connection_info.id().0,
             server_protocol: *connection_info.server_protocol(),
             creation_time: local_date_time_to_string(&LocalDateTime::from(
                 *connection_info.creation_time(),
@@ -48,7 +50,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
 #[derive(Debug, Serialize)]
 struct ConnectionInfoResponse {
     num_connections: usize,
-    connections: BTreeMap<usize, ConnectionInfoDTO>,
+    connections: Vec<ConnectionInfoDTO>,
 }
 
 struct ConnectionInfoHandler {
@@ -66,13 +68,15 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let connections: BTreeMap<usize, ConnectionInfoDTO> = self
+        let mut connections: Vec<ConnectionInfoDTO> = self
             .connection_tracker
             .all_connections()
             .await
             .iter()
-            .map(|c| (c.id().0, c.into()))
+            .map(|c| c.into())
             .collect();
+
+        connections.sort_by_key(|c| c.id);
 
         let response = ConnectionInfoResponse {
             num_connections: connections.len(),
