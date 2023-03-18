@@ -53,6 +53,20 @@ struct ConnectionInfoResponse {
     connections: Vec<ConnectionInfoDTO>,
 }
 
+impl From<Vec<ConnectionInfo>> for ConnectionInfoResponse {
+    fn from(connection_info_list: Vec<ConnectionInfo>) -> Self {
+        let mut connections: Vec<ConnectionInfoDTO> =
+            connection_info_list.iter().map(|c| c.into()).collect();
+
+        connections.sort_by_key(|c| c.id);
+
+        ConnectionInfoResponse {
+            num_connections: connections.len(),
+            connections,
+        }
+    }
+}
+
 struct ConnectionInfoHandler {
     connection_tracker: &'static ConnectionTracker,
 }
@@ -68,20 +82,8 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let mut connections: Vec<ConnectionInfoDTO> = self
-            .connection_tracker
-            .all_connections()
-            .await
-            .iter()
-            .map(|c| c.into())
-            .collect();
-
-        connections.sort_by_key(|c| c.id);
-
-        let response = ConnectionInfoResponse {
-            num_connections: connections.len(),
-            connections,
-        };
+        let response: ConnectionInfoResponse =
+            self.connection_tracker.all_connections().await.into();
 
         build_json_response(response)
     }
