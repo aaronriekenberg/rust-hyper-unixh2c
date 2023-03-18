@@ -47,6 +47,7 @@ impl From<&ConnectionInfo> for ConnectionInfoDTO {
 
 #[derive(Debug, Serialize)]
 struct ConnectionInfoResponse {
+    num_connections: usize,
     connections: BTreeMap<usize, ConnectionInfoDTO>,
 }
 
@@ -65,14 +66,17 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
+        let connections: BTreeMap<usize, ConnectionInfoDTO> = self
+            .connection_tracker
+            .all_connections()
+            .await
+            .iter()
+            .map(|c| (c.id().0, c.into()))
+            .collect();
+
         let response = ConnectionInfoResponse {
-            connections: self
-                .connection_tracker
-                .all_connections()
-                .await
-                .iter()
-                .map(|c| (c.id().0, c.into()))
-                .collect(),
+            num_connections: connections.len(),
+            connections,
         };
 
         build_json_response(response)
