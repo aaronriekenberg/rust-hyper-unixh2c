@@ -10,6 +10,7 @@ use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest,
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
+    app_version: &'a str,
     connection_id: usize,
     request_id: usize,
     method: &'a str,
@@ -18,11 +19,14 @@ struct RequestInfoResponse<'a> {
     http_headers: BTreeMap<&'a str, &'a str>,
 }
 
-struct RequestInfoHandler {}
+struct RequestInfoHandler {
+    app_version: &'static str,
+}
 
 impl RequestInfoHandler {
     fn new() -> Self {
-        Self {}
+        let app_version = env!("VERGEN_BUILD_SEMVER");
+        Self { app_version }
     }
 }
 
@@ -41,6 +45,7 @@ impl RequestHandler for RequestInfoHandler {
         };
 
         let response = RequestInfoResponse {
+            app_version: self.app_version,
             connection_id: request.connection_id().0,
             request_id: request.request_id().0,
             method: hyper_request.method().as_str(),
