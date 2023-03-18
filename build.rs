@@ -1,4 +1,3 @@
-use anyhow::Result;
 use vergen::{vergen, Config};
 
 fn main() -> anyhow::Result<()> {
