@@ -19,19 +19,15 @@ struct RequestFields<'a> {
 
 #[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
-    app_version: &'a str,
     request_fields: RequestFields<'a>,
     request_headers: BTreeMap<&'a str, &'a str>,
 }
 
-struct RequestInfoHandler {
-    app_version: &'static str,
-}
+struct RequestInfoHandler {}
 
 impl RequestInfoHandler {
     fn new() -> Self {
-        let app_version = env!("VERGEN_BUILD_SEMVER");
-        Self { app_version }
+        Self {}
     }
 }
 
@@ -50,7 +46,6 @@ impl RequestHandler for RequestInfoHandler {
         };
 
         let response = RequestInfoResponse {
-            app_version: self.app_version,
             request_fields: RequestFields {
                 connection_id: request.connection_id().0,
                 http_version,

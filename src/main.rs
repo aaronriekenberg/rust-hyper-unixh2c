@@ -10,8 +10,6 @@ mod time;
 
 use anyhow::Context;
 
-use tracing::info;
-
 fn app_name() -> String {
     std::env::args().nth(0).unwrap_or("[UNKNOWN]".to_owned())
 }
@@ -19,14 +17,6 @@ fn app_name() -> String {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-
-    info!(
-        "Build SEMVER: {} Target: {} Timestamp: {} SHA: {}",
-        env!("VERGEN_BUILD_SEMVER"),
-        env!("VERGEN_CARGO_TARGET_TRIPLE"),
-        env!("VERGEN_BUILD_TIMESTAMP"),
-        env!("VERGEN_GIT_SHA")
-    );
 
     let config_file = std::env::args().nth(1).with_context(|| {
         format!(
