@@ -25,8 +25,8 @@ struct ConnectionInfoDTO {
     num_requests: usize,
 }
 
-impl From<&ConnectionInfo> for ConnectionInfoDTO {
-    fn from(connection_info: &ConnectionInfo) -> Self {
+impl From<ConnectionInfo> for ConnectionInfoDTO {
+    fn from(connection_info: ConnectionInfo) -> Self {
         let age = connection_info
             .creation_time()
             .elapsed()
@@ -56,7 +56,7 @@ struct ConnectionInfoResponse {
 impl From<Vec<ConnectionInfo>> for ConnectionInfoResponse {
     fn from(connection_info_list: Vec<ConnectionInfo>) -> Self {
         let mut connections: Vec<ConnectionInfoDTO> =
-            connection_info_list.iter().map(|c| c.into()).collect();
+            connection_info_list.into_iter().map(|c| c.into()).collect();
 
         connections.sort_by_key(|c| c.id);
 
