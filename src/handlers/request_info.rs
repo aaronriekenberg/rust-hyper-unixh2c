@@ -9,14 +9,19 @@ use serde::Serialize;
 use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler};
 
 #[derive(Debug, Serialize)]
+struct RequestFields<'a> {
+    connection_id: usize,
+    http_version: &'a str,
+    method: &'a str,
+    request_id: usize,
+    request_uri_path: &'a str,
+}
+
+#[derive(Debug, Serialize)]
 struct RequestInfoResponse<'a> {
     app_version: &'a str,
-    connection_id: usize,
-    request_id: usize,
-    method: &'a str,
-    version: &'a str,
-    request_uri_path: &'a str,
-    http_headers: BTreeMap<&'a str, &'a str>,
+    request_fields: RequestFields<'a>,
+    request_headers: BTreeMap<&'a str, &'a str>,
 }
 
 struct RequestInfoHandler {
@@ -35,7 +40,7 @@ impl RequestHandler for RequestInfoHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
         let hyper_request = request.hyper_request();
 
-        let version = match hyper_request.version() {
+        let http_version = match hyper_request.version() {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
             Version::HTTP_11 => "HTTP/1.1",
@@ -46,12 +51,14 @@ impl RequestHandler for RequestInfoHandler {
 
         let response = RequestInfoResponse {
             app_version: self.app_version,
-            connection_id: request.connection_id().0,
-            request_id: request.request_id().0,
-            method: hyper_request.method().as_str(),
-            version,
-            request_uri_path: hyper_request.uri().path(),
-            http_headers: hyper_request
+            request_fields: RequestFields {
+                connection_id: request.connection_id().0,
+                http_version,
+                method: hyper_request.method().as_str(),
+                request_id: request.request_id().0,
+                request_uri_path: hyper_request.uri().path(),
+            },
+            request_headers: hyper_request
                 .headers()
                 .iter()
                 .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
