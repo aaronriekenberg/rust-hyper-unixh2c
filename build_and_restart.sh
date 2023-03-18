@@ -8,7 +8,7 @@ git pull -v
 
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-time cargo build -v --release
+time cargo build -v --release -j2
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
   echo "cargo build failed RESULT = $RESULT"
