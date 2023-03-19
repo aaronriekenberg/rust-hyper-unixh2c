@@ -1,5 +1,5 @@
 mod commands;
-mod connection;
+mod connection_info;
 mod request_info;
 mod route;
 mod utils;
@@ -18,7 +18,7 @@ pub trait RequestHandler: Send + Sync {
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
     let mut routes = Vec::new();
 
-    routes.append(&mut connection::create_routes().await);
+    routes.append(&mut connection_info::create_routes().await);
 
     routes.append(&mut commands::create_routes()?);
 
