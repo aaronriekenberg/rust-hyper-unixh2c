@@ -28,7 +28,7 @@ while [ $DONE = "false" ] ; do
   else
     echo "wget failure result $WGET_RESULT sleeping"
     DONE=false
-    sleep 60
+    sleep 120
   fi
 
 done
