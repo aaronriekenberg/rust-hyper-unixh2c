@@ -4,17 +4,33 @@ cd ~/rust-hyper-unixh2c
 
 systemctl --user stop rust-hyper-unixh2c.service
 
-git pull -v
+DONE=false
 
-RELEASE=$(git describe --abbrev=0 --tags)
-echo "RELEASE=$RELEASE"
+while [ $DONE = "false" ] ; do
 
-rm -fr target
-mkdir -p target/release
-touch target/release/${RELEASE}
-cd target/release
+  git pull -v
 
-wget https://github.com/aaronriekenberg/rust-hyper-unixh2c/releases/download/${RELEASE}/rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz
+  RELEASE=$(git describe --abbrev=0 --tags)
+  echo "RELEASE=$RELEASE"
+
+  rm -fr target
+  mkdir -p target/release
+  touch target/release/${RELEASE}
+  cd target/release
+
+  URL="https://github.com/aaronriekenberg/rust-hyper-unixh2c/releases/download/${RELEASE}/rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz"
+
+  wget $URL
+  WGET_RESULT=$?
+  if [ $WGET_RESULT -eq 0 ] ; then
+    DONE=true
+  else
+    echo "wget failure result $WGET_RESULT sleeping"
+    DONE=false
+    sleep 60
+  fi
+
+done
 
 tar xvf rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz
 
