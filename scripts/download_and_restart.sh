@@ -1,12 +1,13 @@
 #!/bin/bash -x
 
-cd ~/rust-hyper-unixh2c
 
 systemctl --user stop rust-hyper-unixh2c.service
 
 DONE=false
 
 while [ $DONE = "false" ] ; do
+
+  cd ~/rust-hyper-unixh2c
 
   git pull -v
 
