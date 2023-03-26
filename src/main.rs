@@ -14,8 +14,7 @@ use tracing::info;
 
 fn log_vergen_info() {
     info!("Vergen Info:");
-    info!("Git Describe: {}", env!("VERGEN_GIT_DESCRIBE"));
-    info!("Git SHA: {}", env!("VERGEN_GIT_SHA"));
+    info!("Cargo pkg version: {}", env!("CARGO_PKG_VERSION"));
     info!(
         "Cargo Target Triple: {}",
         env!("VERGEN_CARGO_TARGET_TRIPLE")
