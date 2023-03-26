@@ -6,6 +6,12 @@ if [ $# -ne 1 ]; then
 fi
 
 RELEASE_VERSION=$1
+
+if [[ $RELEASE_VERSION != v* ]]; then
+  echo "RELEASE_VERSION $RELEASE_VERSION does not begin with 'v'"
+  exit 1
+fi
+
 RELEASE_VERSION_WITHOUT_V=$(echo $RELEASE_VERSION | sed -e 's/^v//g')
 
 echo "RELEASE_VERSION=$RELEASE_VERSION"
