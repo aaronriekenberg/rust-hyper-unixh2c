@@ -36,4 +36,5 @@ git commit -m "Version $RELEASE_VERSION_WITHOUT_V"
 
 git tag $RELEASE_VERSION
 
-git push --all --tags
+git push -v
+git push -v --tags
