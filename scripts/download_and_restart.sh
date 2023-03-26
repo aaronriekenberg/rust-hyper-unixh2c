@@ -16,7 +16,6 @@ while [ $DONE = "false" ] ; do
 
   rm -fr target
   mkdir -p target/release
-  touch target/release/${RELEASE}
   cd target/release
 
   URL="https://github.com/aaronriekenberg/rust-hyper-unixh2c/releases/download/${RELEASE}/rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz"
