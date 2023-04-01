@@ -42,4 +42,5 @@ git commit -m "Version $RELEASE_VERSION_WITHOUT_V" || exit 1
 
 git tag $RELEASE_VERSION || exit 1
 
-git push -v origin $RELEASE_VERSION || exit 1
+git push -v || exit 1
+git push -v --tags || exit 1
