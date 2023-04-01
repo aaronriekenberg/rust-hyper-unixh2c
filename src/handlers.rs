@@ -20,7 +20,7 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     routes.append(&mut connection_info::create_routes().await);
 
-    routes.append(&mut commands::create_routes()?);
+    routes.append(&mut commands::create_routes().await?);
 
     routes.append(&mut request_info::create_routes());
 

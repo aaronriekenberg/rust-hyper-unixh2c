@@ -13,7 +13,7 @@ use tracing::warn;
 
 use tokio::{
     process::Command,
-    sync::{Semaphore, SemaphorePermit},
+    sync::{OnceCell, Semaphore, SemaphorePermit},
     time::{Duration, Instant},
 };
 
@@ -28,23 +28,35 @@ use crate::{
     time::current_local_date_time_string,
 };
 
-struct AllCommandsHandler {
-    json_string: String,
-}
+struct AllCommandsHandler {}
 
 impl AllCommandsHandler {
-    fn new(commands: &Vec<crate::config::CommandInfo>) -> anyhow::Result<Self> {
-        let json_string = serde_json::to_string(commands)
-            .context("AllCommandsHandler::new: json marshal error")?;
+    async fn json_string() -> anyhow::Result<&'static str> {
+        static INSTANCE: OnceCell<String> = OnceCell::const_new();
 
-        Ok(Self { json_string })
+        let string = INSTANCE
+            .get_or_try_init(|| async move {
+                let commands = crate::config::instance().command_configuration().commands();
+                serde_json::to_string(commands)
+            })
+            .await
+            .context("AllCommandsHandler::json_string INSTANCE.get_or_try_init error")?;
+
+        Ok(string)
+    }
+
+    async fn new() -> anyhow::Result<Self> {
+        Self::json_string().await?;
+
+        Ok(Self {})
     }
 }
 
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        build_json_body_response(Body::from(self.json_string.clone()))
+        let string = Self::json_string().await.unwrap();
+        build_json_body_response(Body::from(string))
     }
 }
 
@@ -162,7 +174,7 @@ impl RequestHandler for RunCommandHandler {
     }
 }
 
-pub fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
+pub async fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
     let command_configuration = crate::config::instance().command_configuration();
 
     let mut routes: Vec<RouteInfo> = Vec::with_capacity(1 + command_configuration.commands().len());
@@ -170,7 +182,7 @@ pub fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
     routes.push(RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("commands"),
-        handler: Box::new(AllCommandsHandler::new(command_configuration.commands())?),
+        handler: Box::new(AllCommandsHandler::new().await?),
     });
 
     let run_command_semaphore = RunCommandSemapore::new(command_configuration);
