@@ -40,7 +40,7 @@ impl AllCommandsHandler {
                 serde_json::to_string(commands)
             })
             .await
-            .context("AllCommandsHandler::json_string INSTANCE.get_or_try_init error")?;
+            .context("AllCommandsHandler::json_string: INSTANCE.get_or_try_init error")?;
 
         Ok(string)
     }
