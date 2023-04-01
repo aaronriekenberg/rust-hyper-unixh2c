@@ -36,11 +36,10 @@ if [ $RESULT -ne 0 ]; then
   echo "cargo test failed"
 fi
 
-git add Cargo.toml Cargo.lock
+git add Cargo.toml Cargo.lock || exit 1
 
-git commit -m "Version $RELEASE_VERSION_WITHOUT_V"
+git commit -m "Version $RELEASE_VERSION_WITHOUT_V" || exit 1
 
-git tag $RELEASE_VERSION
+git tag $RELEASE_VERSION || exit 1
 
-git push -v
-git push -v --tags
+git push -v $RELEASE_VERSION || exit 1
