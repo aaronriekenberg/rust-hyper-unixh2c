@@ -7,6 +7,8 @@ DONE=false
 
 while [ $DONE = "false" ] ; do
 
+  echo "begin loop $(date)"
+
   cd ~/rust-hyper-unixh2c
 
   git pull -v
