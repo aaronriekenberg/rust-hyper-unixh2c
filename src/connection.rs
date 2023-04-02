@@ -83,6 +83,7 @@ impl Drop for ConnectionGuard {
 
 struct ConnectionTrackerState {
     next_connection_id: usize,
+    max_open_connections: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 
@@ -90,6 +91,7 @@ impl ConnectionTrackerState {
     fn new() -> Self {
         Self {
             next_connection_id: 1,
+            max_open_connections: 0,
             id_to_connection_info: HashMap::new(),
         }
     }
@@ -125,10 +127,13 @@ impl ConnectionTracker {
             .id_to_connection_info
             .insert(connection_id, connection_info);
 
-        debug!(
-            "add_new_connection id_to_connection_info.len = {}",
-            state.id_to_connection_info.len()
-        );
+        let num_connections = state.id_to_connection_info.len();
+
+        if num_connections > state.max_open_connections {
+            state.max_open_connections = num_connections;
+        }
+
+        debug!("add_new_connection num_connections = {}", num_connections,);
 
         ConnectionGuard::new(self, connection_id, num_requests)
     }
@@ -144,10 +149,13 @@ impl ConnectionTracker {
         );
     }
 
-    pub async fn all_connections(&self) -> Vec<ConnectionInfo> {
+    pub async fn get_info(&self) -> ConnectionTrackerInfo {
         let state = self.state.read().await;
 
-        state.id_to_connection_info.values().cloned().collect()
+        ConnectionTrackerInfo {
+            max_open_connections: state.max_open_connections,
+            open_connections: state.id_to_connection_info.values().cloned().collect(),
+        }
     }
 
     pub async fn instance() -> &'static ConnectionTracker {
@@ -157,4 +165,9 @@ impl ConnectionTracker {
             .get_or_init(|| async move { ConnectionTracker::new() })
             .await
     }
+}
+
+pub struct ConnectionTrackerInfo {
+    pub max_open_connections: usize,
+    pub open_connections: Vec<ConnectionInfo>,
 }

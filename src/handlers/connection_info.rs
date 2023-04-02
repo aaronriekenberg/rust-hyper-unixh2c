@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use crate::{
     config::ServerProtocol,
-    connection::{ConnectionInfo, ConnectionTracker},
+    connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerInfo},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
 };
@@ -49,20 +49,25 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
 
 #[derive(Debug, Serialize)]
 struct ConnectionInfoResponse {
-    num_connections: usize,
-    connections: Vec<ConnectionInfoDTO>,
+    max_open_connections: usize,
+    num_open_connections: usize,
+    open_connections: Vec<ConnectionInfoDTO>,
 }
 
-impl From<Vec<ConnectionInfo>> for ConnectionInfoResponse {
-    fn from(connection_info_list: Vec<ConnectionInfo>) -> Self {
-        let mut connections: Vec<ConnectionInfoDTO> =
-            connection_info_list.into_iter().map(|c| c.into()).collect();
+impl From<ConnectionTrackerInfo> for ConnectionInfoResponse {
+    fn from(metadata: ConnectionTrackerInfo) -> Self {
+        let mut open_connections: Vec<ConnectionInfoDTO> = metadata
+            .open_connections
+            .into_iter()
+            .map(|c| c.into())
+            .collect();
 
-        connections.sort_by_key(|c| c.id);
+        open_connections.sort_by_key(|c| c.id);
 
         ConnectionInfoResponse {
-            num_connections: connections.len(),
-            connections,
+            max_open_connections: metadata.max_open_connections,
+            num_open_connections: open_connections.len(),
+            open_connections,
         }
     }
 }
@@ -82,8 +87,7 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let response: ConnectionInfoResponse =
-            self.connection_tracker.all_connections().await.into();
+        let response: ConnectionInfoResponse = self.connection_tracker.get_info().await.into();
 
         build_json_response(response)
     }
