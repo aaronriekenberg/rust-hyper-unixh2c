@@ -81,13 +81,13 @@ impl Drop for ConnectionGuard {
     }
 }
 
-struct ConnectionTrackerState {
+struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 
-impl ConnectionTrackerState {
+impl InternalConnectionTrackerState {
     fn new() -> Self {
         Self {
             next_connection_id: 1,
@@ -104,13 +104,13 @@ impl ConnectionTrackerState {
 }
 
 pub struct ConnectionTracker {
-    state: RwLock<ConnectionTrackerState>,
+    state: RwLock<InternalConnectionTrackerState>,
 }
 
 impl ConnectionTracker {
     fn new() -> Self {
         Self {
-            state: RwLock::new(ConnectionTrackerState::new()),
+            state: RwLock::new(InternalConnectionTrackerState::new()),
         }
     }
 
@@ -149,10 +149,10 @@ impl ConnectionTracker {
         );
     }
 
-    pub async fn get_info(&self) -> ConnectionTrackerInfo {
+    pub async fn state(&self) -> ConnectionTrackerState {
         let state = self.state.read().await;
 
-        ConnectionTrackerInfo {
+        ConnectionTrackerState {
             max_open_connections: state.max_open_connections,
             open_connections: state.id_to_connection_info.values().cloned().collect(),
         }
@@ -167,7 +167,7 @@ impl ConnectionTracker {
     }
 }
 
-pub struct ConnectionTrackerInfo {
+pub struct ConnectionTrackerState {
     pub max_open_connections: usize,
     pub open_connections: Vec<ConnectionInfo>,
 }

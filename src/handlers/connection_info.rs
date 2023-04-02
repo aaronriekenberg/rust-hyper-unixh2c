@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use crate::{
     config::ServerProtocol,
-    connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerInfo},
+    connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
 };
@@ -54,9 +54,9 @@ struct ConnectionInfoResponse {
     open_connections: Vec<ConnectionInfoDTO>,
 }
 
-impl From<ConnectionTrackerInfo> for ConnectionInfoResponse {
-    fn from(metadata: ConnectionTrackerInfo) -> Self {
-        let mut open_connections: Vec<ConnectionInfoDTO> = metadata
+impl From<ConnectionTrackerState> for ConnectionInfoResponse {
+    fn from(state: ConnectionTrackerState) -> Self {
+        let mut open_connections: Vec<ConnectionInfoDTO> = state
             .open_connections
             .into_iter()
             .map(|c| c.into())
@@ -65,7 +65,7 @@ impl From<ConnectionTrackerInfo> for ConnectionInfoResponse {
         open_connections.sort_by_key(|c| c.id);
 
         ConnectionInfoResponse {
-            max_open_connections: metadata.max_open_connections,
+            max_open_connections: state.max_open_connections,
             num_open_connections: open_connections.len(),
             open_connections,
         }
@@ -87,7 +87,7 @@ impl ConnectionInfoHandler {
 #[async_trait]
 impl RequestHandler for ConnectionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let response: ConnectionInfoResponse = self.connection_tracker.get_info().await.into();
+        let response: ConnectionInfoResponse = self.connection_tracker.state().await.into();
 
         build_json_response(response)
     }
