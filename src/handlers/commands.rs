@@ -55,8 +55,8 @@ impl AllCommandsHandler {
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let string = Self::json_string().await.unwrap();
-        build_json_body_response(Body::from(string))
+        let json_string = Self::json_string().await.unwrap();
+        build_json_body_response(Body::from(json_string))
     }
 }
 
