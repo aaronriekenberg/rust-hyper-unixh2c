@@ -115,10 +115,7 @@ impl RunCommandHandler {
         }
     }
 
-    async fn run_command(
-        &self,
-        _permit: SemaphorePermit<'_>,
-    ) -> Result<std::process::Output, std::io::Error> {
+    async fn run_command(&self) -> Result<std::process::Output, std::io::Error> {
         let output = Command::new(self.command_info.command())
             .args(self.command_info.args())
             .output()
@@ -158,7 +155,7 @@ impl RunCommandHandler {
 #[async_trait]
 impl RequestHandler for RunCommandHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let permit = match self.run_command_semaphore.acquire().await {
+        let run_command_permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);
                 return build_status_code_response(StatusCode::TOO_MANY_REQUESTS);
@@ -167,8 +164,10 @@ impl RequestHandler for RunCommandHandler {
         };
 
         let command_start_time = Instant::now();
-        let command_result = self.run_command(permit).await;
+        let command_result = self.run_command().await;
         let command_duration = command_start_time.elapsed();
+
+        drop(run_command_permit);
 
         self.handle_command_result(command_result, command_duration)
     }
