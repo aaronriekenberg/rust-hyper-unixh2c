@@ -23,13 +23,7 @@ struct RequestInfoResponse<'a> {
     request_headers: BTreeMap<&'a str, &'a str>,
 }
 
-struct RequestInfoHandler {}
-
-impl RequestInfoHandler {
-    fn new() -> Self {
-        Self {}
-    }
-}
+struct RequestInfoHandler;
 
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
@@ -68,6 +62,6 @@ pub fn create_routes() -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("request_info"),
-        handler: Box::new(RequestInfoHandler::new()),
+        handler: Box::new(RequestInfoHandler),
     }]
 }

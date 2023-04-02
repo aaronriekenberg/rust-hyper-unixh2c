@@ -28,7 +28,7 @@ use crate::{
     time::current_local_date_time_string,
 };
 
-struct AllCommandsHandler {}
+struct AllCommandsHandler;
 
 impl AllCommandsHandler {
     async fn json_string() -> anyhow::Result<&'static str> {
@@ -45,10 +45,10 @@ impl AllCommandsHandler {
         Ok(string)
     }
 
-    async fn new() -> anyhow::Result<Self> {
+    async fn instance() -> anyhow::Result<Self> {
         Self::json_string().await?;
 
-        Ok(Self {})
+        Ok(Self)
     }
 }
 
@@ -182,7 +182,7 @@ pub async fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
     routes.push(RouteInfo {
         method: &Method::GET,
         path_suffix: PathBuf::from("commands"),
-        handler: Box::new(AllCommandsHandler::new().await?),
+        handler: Box::new(AllCommandsHandler::instance().await?),
     });
 
     let run_command_semaphore = RunCommandSemapore::new(command_configuration);
