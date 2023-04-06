@@ -48,32 +48,42 @@ impl Router {
         let context_path = Path::new(crate::config::instance().context_configuration().context());
 
         for route in routes {
-            let path = context_path.join(route.path_suffix);
-
-            let path = path
-                .to_str()
-                .with_context(|| {
-                    format!(
-                        "Router::new error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
-                        path,
-                    )
-                })?
-                .to_owned();
-
-            let key = RouteKey {
-                method: route.method,
-                path: Cow::from(path),
-            };
+            let route_key = Self::build_route_key(context_path, &route)?;
 
             if router
                 .route_key_to_handler
-                .insert(key.clone(), route.handler)
+                .insert(route_key.clone(), route.handler)
                 .is_some()
             {
-                anyhow::bail!("Router::new error: collision in router key = {:?}", key);
+                anyhow::bail!(
+                    "Router::new error: collision in router key = {:?}",
+                    route_key,
+                );
             }
         }
         Ok(router)
+    }
+
+    fn build_route_key(
+        context_path: &Path,
+        route: &RouteInfo,
+    ) -> anyhow::Result<RouteKey<'static>> {
+        let path = context_path.join(&route.path_suffix);
+
+        let path = path
+            .to_str()
+            .with_context(|| {
+                format!(
+                    "Router::new error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
+                    path,
+                )
+            })?
+            .to_owned();
+
+        Ok(RouteKey {
+            method: route.method,
+            path: Cow::from(path),
+        })
     }
 }
 
