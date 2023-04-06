@@ -74,7 +74,7 @@ impl Router {
             .to_str()
             .with_context(|| {
                 format!(
-                    "Router::new error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
+                    "Router::build_route_key error: uri_pathbuf.to_str error uri_pathbuf = '{:?}'",
                     path,
                 )
             })?
