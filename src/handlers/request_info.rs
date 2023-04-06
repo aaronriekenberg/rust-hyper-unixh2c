@@ -25,24 +25,28 @@ struct RequestInfoResponse<'a> {
 
 struct RequestInfoHandler;
 
-#[async_trait]
-impl RequestHandler for RequestInfoHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
-        let hyper_request = request.hyper_request();
-
-        let http_version = match hyper_request.version() {
+impl RequestInfoHandler {
+    fn hyper_version_to_str(hyper_version: Version) -> &'static str {
+        match hyper_version {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
             Version::HTTP_11 => "HTTP/1.1",
             Version::HTTP_2 => "HTTP/2.0",
             Version::HTTP_3 => "HTTP/3.0",
             _ => "[Unknown]",
-        };
+        }
+    }
+}
+
+#[async_trait]
+impl RequestHandler for RequestInfoHandler {
+    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+        let hyper_request = request.hyper_request();
 
         let response = RequestInfoResponse {
             request_fields: RequestFields {
                 connection_id: request.connection_id().0,
-                http_version,
+                http_version: Self::hyper_version_to_str(hyper_request.version()),
                 method: hyper_request.method().as_str(),
                 request_id: request.request_id().0,
                 request_uri_path: hyper_request.uri().path(),
