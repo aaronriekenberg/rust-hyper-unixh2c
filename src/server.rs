@@ -6,7 +6,7 @@ use hyper::{
     Body,
 };
 
-use tracing::{debug, info, instrument, Instrument};
+use tracing::{debug, info, instrument, warn, Instrument};
 
 use tokio::net::{UnixListener, UnixStream};
 
@@ -85,10 +85,10 @@ impl Server {
                     .await
             }
         } {
-            info!(
+            warn!(
                 "Error while serving {:?} connection: {:?}",
                 self.server_configuration.server_protocol(),
-                http_err
+                http_err,
             );
         }
 
