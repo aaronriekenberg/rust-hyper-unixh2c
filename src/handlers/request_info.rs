@@ -74,7 +74,7 @@ struct RequestInfoHandler;
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
-        let response: &RequestInfoResponse<'_> = &request.into();
+        let response: RequestInfoResponse<'_> = request.into();
 
         build_json_response(response)
     }
