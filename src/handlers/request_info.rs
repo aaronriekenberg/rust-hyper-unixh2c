@@ -17,46 +17,64 @@ struct RequestFields<'a> {
     request_uri_path: &'a str,
 }
 
-#[derive(Debug, Serialize)]
-struct RequestInfoResponse<'a> {
-    request_fields: RequestFields<'a>,
-    request_headers: BTreeMap<&'a str, &'a str>,
-}
+impl<'a> From<&'a HttpRequest> for RequestFields<'a> {
+    fn from(request: &'a HttpRequest) -> Self {
+        let hyper_request = request.hyper_request();
 
-struct RequestInfoHandler;
-
-impl RequestInfoHandler {
-    fn hyper_version_to_str(hyper_version: Version) -> &'static str {
-        match hyper_version {
+        let http_version = match hyper_request.version() {
             Version::HTTP_09 => "HTTP/0.9",
             Version::HTTP_10 => "HTTP/1.0",
             Version::HTTP_11 => "HTTP/1.1",
             Version::HTTP_2 => "HTTP/2.0",
             Version::HTTP_3 => "HTTP/3.0",
             _ => "[Unknown]",
+        };
+
+        Self {
+            connection_id: request.connection_id().0,
+            http_version,
+            method: hyper_request.method().as_str(),
+            request_id: request.request_id().0,
+            request_uri_path: hyper_request.uri().path(),
         }
     }
 }
 
+type SortedRequestHeaders<'a> = BTreeMap<&'a str, &'a str>;
+
+impl<'a> From<&'a HttpRequest> for SortedRequestHeaders<'a> {
+    fn from(request: &'a HttpRequest) -> Self {
+        request
+            .hyper_request()
+            .headers()
+            .iter()
+            .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
+            .collect()
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct RequestInfoResponse<'a> {
+    request_fields: RequestFields<'a>,
+    request_headers: SortedRequestHeaders<'a>,
+}
+
+impl<'a> From<&'a HttpRequest> for RequestInfoResponse<'a> {
+    fn from(request: &'a HttpRequest) -> Self {
+        let response = Self {
+            request_fields: request.into(),
+            request_headers: request.into(),
+        };
+        response
+    }
+}
+
+struct RequestInfoHandler;
+
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<Body> {
-        let hyper_request = request.hyper_request();
-
-        let response = RequestInfoResponse {
-            request_fields: RequestFields {
-                connection_id: request.connection_id().0,
-                http_version: Self::hyper_version_to_str(hyper_request.version()),
-                method: hyper_request.method().as_str(),
-                request_id: request.request_id().0,
-                request_uri_path: hyper_request.uri().path(),
-            },
-            request_headers: hyper_request
-                .headers()
-                .iter()
-                .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))
-                .collect(),
-        };
+        let response: &RequestInfoResponse<'_> = &request.into();
 
         build_json_response(response)
     }
