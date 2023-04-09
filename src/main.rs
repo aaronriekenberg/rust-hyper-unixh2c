@@ -7,25 +7,17 @@ mod handlers;
 mod request;
 mod server;
 mod time;
+mod version;
 
 use anyhow::Context;
 
 use tracing::info;
 
-fn log_vergen_info() {
-    info!("Vergen Info:");
-    info!("Cargo pkg version: {}", env!("CARGO_PKG_VERSION"));
-    info!(
-        "Cargo Target Triple: {}",
-        env!("VERGEN_CARGO_TARGET_TRIPLE")
-    );
-    info!("Build Timestamp: {}", env!("VERGEN_BUILD_TIMESTAMP"));
-    info!("Rustc Semver: {}", env!("VERGEN_RUSTC_SEMVER"));
-    info!("Sysinfo Name: {}", env!("VERGEN_SYSINFO_NAME"));
-    info!(
-        "Sysinfo CPU Core Count: {}",
-        env!("VERGEN_SYSINFO_CPU_CORE_COUNT"),
-    );
+fn log_version_info() {
+    info!("Version Info:");
+    for (key, value) in version::get_verison_info() {
+        info!("{}: {}", key, value);
+    }
 }
 
 fn app_name() -> String {
@@ -36,7 +28,7 @@ fn app_name() -> String {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    log_vergen_info();
+    log_version_info();
 
     let config_file = std::env::args().nth(1).with_context(|| {
         format!(
