@@ -13,6 +13,7 @@ use crate::{
     connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
+    version::{get_verison_info, VersionInfoMap},
 };
 
 #[derive(Debug, Serialize)]
@@ -48,13 +49,13 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
 }
 
 #[derive(Debug, Serialize)]
-struct ConnectionInfoResponse {
+struct ConnectionTrackerStateDTO {
     max_open_connections: usize,
     num_open_connections: usize,
     open_connections: Vec<ConnectionInfoDTO>,
 }
 
-impl From<ConnectionTrackerState> for ConnectionInfoResponse {
+impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
     fn from(state: ConnectionTrackerState) -> Self {
         let mut open_connections: Vec<ConnectionInfoDTO> = state
             .open_connections
@@ -62,9 +63,9 @@ impl From<ConnectionTrackerState> for ConnectionInfoResponse {
             .map(|c| c.into())
             .collect();
 
-        open_connections.sort_by_key(|c| c.id);
+        open_connections.sort_unstable_by_key(|c| c.id);
 
-        ConnectionInfoResponse {
+        Self {
             max_open_connections: state.max_open_connections,
             num_open_connections: open_connections.len(),
             open_connections,
@@ -72,11 +73,17 @@ impl From<ConnectionTrackerState> for ConnectionInfoResponse {
     }
 }
 
-struct ConnectionInfoHandler {
+#[derive(Debug, Serialize)]
+struct ServerInfoDTO {
+    connection_info: ConnectionTrackerStateDTO,
+    version_info: VersionInfoMap,
+}
+
+struct ServerInfoHandler {
     connection_tracker: &'static ConnectionTracker,
 }
 
-impl ConnectionInfoHandler {
+impl ServerInfoHandler {
     async fn new() -> Self {
         Self {
             connection_tracker: ConnectionTracker::instance().await,
@@ -85,18 +92,21 @@ impl ConnectionInfoHandler {
 }
 
 #[async_trait]
-impl RequestHandler for ConnectionInfoHandler {
+impl RequestHandler for ServerInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let response: ConnectionInfoResponse = self.connection_tracker.state().await.into();
+        let server_info_dto = ServerInfoDTO {
+            connection_info: self.connection_tracker.state().await.into(),
+            version_info: get_verison_info(),
+        };
 
-        build_json_response(response)
+        build_json_response(server_info_dto)
     }
 }
 
 pub async fn create_routes() -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
-        path_suffix: PathBuf::from("connection_info"),
-        handler: Box::new(ConnectionInfoHandler::new().await),
+        path_suffix: PathBuf::from("server_info"),
+        handler: Box::new(ServerInfoHandler::new().await),
     }]
 }
