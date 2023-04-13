@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 
+use tokio::sync::OnceCell;
+
 pub type VersionInfoMap = BTreeMap<&'static str, &'static str>;
 
-pub fn get_verison_info() -> VersionInfoMap {
+async fn build_version_info_map() -> VersionInfoMap {
     let mut map = VersionInfoMap::new();
 
     map.insert("CARGO_PKG_VERSION", env!("CARGO_PKG_VERSION"));
@@ -18,4 +20,10 @@ pub fn get_verison_info() -> VersionInfoMap {
     map.insert("VERGEN_RUSTC_SEMVER", env!("VERGEN_RUSTC_SEMVER"));
 
     map
+}
+
+pub async fn get_verison_info() -> &'static VersionInfoMap {
+    static INSTANCE: OnceCell<VersionInfoMap> = OnceCell::const_new();
+
+    INSTANCE.get_or_init(|| build_version_info_map()).await
 }

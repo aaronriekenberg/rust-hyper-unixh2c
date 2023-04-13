@@ -13,9 +13,9 @@ use anyhow::Context;
 
 use tracing::info;
 
-fn log_version_info() {
+async fn log_version_info() {
     info!("Version Info:");
-    for (key, value) in version::get_verison_info() {
+    for (key, value) in version::get_verison_info().await {
         info!("{}: {}", key, value);
     }
 }
@@ -28,7 +28,7 @@ fn app_name() -> String {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    log_version_info();
+    log_version_info().await;
 
     let config_file = std::env::args().nth(1).with_context(|| {
         format!(

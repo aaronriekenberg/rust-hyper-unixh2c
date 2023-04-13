@@ -76,7 +76,7 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
 #[derive(Debug, Serialize)]
 struct ServerInfoDTO {
     connection_info: ConnectionTrackerStateDTO,
-    version_info: VersionInfoMap,
+    version_info: &'static VersionInfoMap,
 }
 
 struct ServerInfoHandler {
@@ -96,7 +96,7 @@ impl RequestHandler for ServerInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
         let server_info_dto = ServerInfoDTO {
             connection_info: self.connection_tracker.state().await.into(),
-            version_info: get_verison_info(),
+            version_info: get_verison_info().await,
         };
 
         build_json_response(server_info_dto)
