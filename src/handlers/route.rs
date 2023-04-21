@@ -96,7 +96,7 @@ impl RequestHandler for Router {
 
         let response = match handler_option {
             None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
-            Some(handler) => handler.handle(&request).await,
+            Some(handler) => handler.handle(request).await,
         };
 
         debug!("end handle");

@@ -25,5 +25,5 @@ async fn build_version_info_map() -> VersionInfoMap {
 pub async fn get_verison_info() -> &'static VersionInfoMap {
     static INSTANCE: OnceCell<VersionInfoMap> = OnceCell::const_new();
 
-    INSTANCE.get_or_init(|| build_version_info_map()).await
+    INSTANCE.get_or_init(build_version_info_map).await
 }

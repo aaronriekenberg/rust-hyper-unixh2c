@@ -21,7 +21,7 @@ async fn log_version_info() {
 }
 
 fn app_name() -> String {
-    std::env::args().nth(0).unwrap_or("[UNKNOWN]".to_owned())
+    std::env::args().next().unwrap_or("[UNKNOWN]".to_owned())
 }
 
 #[tokio::main]

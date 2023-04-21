@@ -61,11 +61,10 @@ struct RequestInfoResponse<'a> {
 
 impl<'a> From<&'a HttpRequest> for RequestInfoResponse<'a> {
     fn from(request: &'a HttpRequest) -> Self {
-        let response = Self {
+        Self {
             request_fields: request.into(),
             request_headers: request.into(),
-        };
-        response
+        }
     }
 }
 

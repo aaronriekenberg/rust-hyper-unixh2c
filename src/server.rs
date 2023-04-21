@@ -102,7 +102,7 @@ impl Server {
         let remove_result = tokio::fs::remove_file(path).await;
         debug!("remove_result = {:?}", remove_result);
 
-        let unix_listener = UnixListener::bind(&path)?;
+        let unix_listener = UnixListener::bind(path)?;
 
         let local_addr = unix_listener.local_addr()?;
         info!("listening on {:?}", local_addr);

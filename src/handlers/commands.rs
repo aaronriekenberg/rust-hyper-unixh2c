@@ -132,7 +132,7 @@ impl RunCommandHandler {
         let response = RunCommandResponse {
             now: current_local_date_time_string(),
             command_duration_ms: command_duration.as_millis(),
-            command_info: &self.command_info,
+            command_info: self.command_info,
             command_output: match command_result {
                 Err(err) => {
                     format!("error running command {}", err)
