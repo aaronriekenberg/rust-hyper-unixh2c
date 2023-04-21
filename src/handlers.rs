@@ -1,8 +1,9 @@
 mod commands;
+mod connection_info;
 mod request_info;
 mod route;
-mod server_info;
 mod utils;
+mod version_info;
 
 use async_trait::async_trait;
 
@@ -22,7 +23,9 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     routes.append(&mut request_info::create_routes());
 
-    routes.append(&mut server_info::create_routes().await);
+    routes.append(&mut connection_info::create_routes().await);
+
+    routes.append(&mut version_info::create_routes().await);
 
     Ok(Box::new(route::Router::new(routes)?))
 }

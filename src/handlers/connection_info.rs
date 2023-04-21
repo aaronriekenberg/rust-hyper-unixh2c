@@ -13,7 +13,6 @@ use crate::{
     connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
-    version::{get_verison_info, VersionInfoMap},
 };
 
 #[derive(Debug, Serialize)]
@@ -65,18 +64,18 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
 
         open_connections.sort_unstable_by_key(|c| c.id);
 
+        let open_connections = open_connections;
+
+        let num_open_connections = open_connections.len();
+
+        let open_connections = open_connections.into_iter().take(20).collect();
+
         Self {
             max_open_connections: state.max_open_connections,
-            num_open_connections: open_connections.len(),
+            num_open_connections,
             open_connections,
         }
     }
-}
-
-#[derive(Debug, Serialize)]
-struct ServerInfoDTO {
-    connection_info: ConnectionTrackerStateDTO,
-    version_info: &'static VersionInfoMap,
 }
 
 struct ServerInfoHandler {
@@ -94,19 +93,17 @@ impl ServerInfoHandler {
 #[async_trait]
 impl RequestHandler for ServerInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
-        let server_info_dto = ServerInfoDTO {
-            connection_info: self.connection_tracker.state().await.into(),
-            version_info: get_verison_info().await,
-        };
+        let connection_tracker_state_dto: ConnectionTrackerStateDTO =
+            self.connection_tracker.state().await.into();
 
-        build_json_response(server_info_dto)
+        build_json_response(connection_tracker_state_dto)
     }
 }
 
 pub async fn create_routes() -> Vec<RouteInfo> {
     vec![RouteInfo {
         method: &Method::GET,
-        path_suffix: PathBuf::from("server_info"),
+        path_suffix: PathBuf::from("connection_info"),
         handler: Box::new(ServerInfoHandler::new().await),
     }]
 }
