@@ -50,6 +50,8 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
 #[derive(Debug, Serialize)]
 struct ConnectionTrackerStateDTO {
     max_open_connections: usize,
+    #[serde(with = "humantime_serde")]
+    max_connection_lifetime: Duration,
     num_open_connections: usize,
     open_connections: Vec<ConnectionInfoDTO>,
 }
@@ -70,8 +72,12 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
 
         let open_connections = open_connections.into_iter().take(20).collect();
 
+        // truncate to seconds
+        let max_connection_lifetime = Duration::from_secs(state.max_connection_lifetime.as_secs());
+
         Self {
             max_open_connections: state.max_open_connections,
+            max_connection_lifetime,
             num_open_connections,
             open_connections,
         }

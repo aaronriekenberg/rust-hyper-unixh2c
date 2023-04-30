@@ -13,6 +13,8 @@ use tokio::sync::{OnceCell, RwLock};
 
 use tracing::debug;
 
+use std::time::Duration;
+
 use crate::config::ServerProtocol;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -84,6 +86,7 @@ impl Drop for ConnectionGuard {
 struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
+    max_connection_lifetime: Duration,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 
@@ -92,6 +95,7 @@ impl InternalConnectionTrackerState {
         Self {
             next_connection_id: 1,
             max_open_connections: 0,
+            max_connection_lifetime: Duration::from_secs(0),
             id_to_connection_info: HashMap::new(),
         }
     }
@@ -141,7 +145,16 @@ impl ConnectionTracker {
     async fn remove_connection(&self, connection_id: ConnectionID) {
         let mut state = self.state.write().await;
 
-        state.id_to_connection_info.remove(&connection_id);
+        if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
+            let lifetime = connection_info
+                .creation_time()
+                .elapsed()
+                .unwrap_or_default();
+
+            if lifetime > state.max_connection_lifetime {
+                state.max_connection_lifetime = lifetime;
+            }
+        }
 
         debug!(
             "remove_connection id_to_connection_info.len = {}",
@@ -154,6 +167,7 @@ impl ConnectionTracker {
 
         ConnectionTrackerState {
             max_open_connections: state.max_open_connections,
+            max_connection_lifetime: state.max_connection_lifetime,
             open_connections: state.id_to_connection_info.values().cloned().collect(),
         }
     }
@@ -169,5 +183,6 @@ impl ConnectionTracker {
 
 pub struct ConnectionTrackerState {
     pub max_open_connections: usize,
+    pub max_connection_lifetime: Duration,
     pub open_connections: Vec<ConnectionInfo>,
 }
