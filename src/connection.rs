@@ -13,7 +13,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 use tracing::debug;
 
-use std::time::Duration;
+use std::{cmp, time::Duration};
 
 use crate::config::ServerProtocol;
 
@@ -91,8 +91,8 @@ impl Drop for ConnectionGuard {
 struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
-    max_connection_lifetime: Duration,
-    max_requests_per_connection: usize,
+    past_max_connection_lifetime: Duration,
+    past_max_requests_per_connection: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 
@@ -101,8 +101,8 @@ impl InternalConnectionTrackerState {
         Self {
             next_connection_id: 1,
             max_open_connections: 0,
-            max_connection_lifetime: Duration::from_secs(0),
-            max_requests_per_connection: 0,
+            past_max_connection_lifetime: Duration::from_secs(0),
+            past_max_requests_per_connection: 0,
             id_to_connection_info: HashMap::new(),
         }
     }
@@ -111,6 +111,28 @@ impl InternalConnectionTrackerState {
         let connection_id = self.next_connection_id;
         self.next_connection_id += 1;
         ConnectionID(connection_id)
+    }
+
+    fn max_connection_lifetime(&self) -> Duration {
+        cmp::max(
+            self.past_max_connection_lifetime,
+            self.id_to_connection_info
+                .values()
+                .map(|c| c.age())
+                .max()
+                .unwrap_or_default(),
+        )
+    }
+
+    fn max_requests_per_connection(&self) -> usize {
+        cmp::max(
+            self.past_max_requests_per_connection,
+            self.id_to_connection_info
+                .values()
+                .map(|c| c.num_requests())
+                .max()
+                .unwrap_or_default(),
+        )
     }
 }
 
@@ -140,9 +162,7 @@ impl ConnectionTracker {
 
         let num_connections = state.id_to_connection_info.len();
 
-        if num_connections > state.max_open_connections {
-            state.max_open_connections = num_connections;
-        }
+        state.max_open_connections = cmp::max(state.max_open_connections, num_connections);
 
         debug!("add_new_connection num_connections = {}", num_connections,);
 
@@ -153,15 +173,13 @@ impl ConnectionTracker {
         let mut state = self.state.write().await;
 
         if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
-            let age = connection_info.age();
-            if age > state.max_connection_lifetime {
-                state.max_connection_lifetime = age;
-            }
+            state.past_max_connection_lifetime =
+                cmp::max(state.past_max_connection_lifetime, connection_info.age());
 
-            let num_requests = connection_info.num_requests();
-            if num_requests > state.max_requests_per_connection {
-                state.max_requests_per_connection = num_requests;
-            }
+            state.past_max_requests_per_connection = cmp::max(
+                state.past_max_requests_per_connection,
+                connection_info.num_requests(),
+            );
         }
 
         debug!(
@@ -175,8 +193,8 @@ impl ConnectionTracker {
 
         ConnectionTrackerState {
             max_open_connections: state.max_open_connections,
-            max_connection_lifetime: state.max_connection_lifetime,
-            max_requests_per_connection: state.max_requests_per_connection,
+            max_connection_lifetime: state.max_connection_lifetime(),
+            max_requests_per_connection: state.max_requests_per_connection(),
             open_connections: state.id_to_connection_info.values().cloned().collect(),
         }
     }
