@@ -26,6 +26,7 @@ pub struct ConnectionInfo {
     id: ConnectionID,
     creation_time: SystemTime,
     server_protocol: ServerProtocol,
+    #[getset(skip)]
     num_requests: Arc<AtomicUsize>,
 }
 
@@ -39,7 +40,7 @@ impl ConnectionInfo {
         }
     }
 
-    pub fn load_num_requests(&self) -> usize {
+    pub fn num_requests(&self) -> usize {
         self.num_requests.load(Ordering::Relaxed)
     }
 }
@@ -125,7 +126,7 @@ impl ConnectionTracker {
 
         let connection_info = ConnectionInfo::new(connection_id, server_protocol);
 
-        let num_requests = Arc::clone(connection_info.num_requests());
+        let num_requests = Arc::clone(&connection_info.num_requests);
 
         state
             .id_to_connection_info

@@ -42,7 +42,7 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
                 *connection_info.creation_time(),
             )),
             age,
-            num_requests: connection_info.load_num_requests(),
+            num_requests: connection_info.num_requests(),
         }
     }
 }
