@@ -43,6 +43,10 @@ impl ConnectionInfo {
     pub fn num_requests(&self) -> usize {
         self.num_requests.load(Ordering::Relaxed)
     }
+
+    pub fn age(&self) -> Duration {
+        self.creation_time().elapsed().unwrap_or_default()
+    }
 }
 
 pub struct ConnectionGuard {
@@ -149,13 +153,9 @@ impl ConnectionTracker {
         let mut state = self.state.write().await;
 
         if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
-            let lifetime = connection_info
-                .creation_time()
-                .elapsed()
-                .unwrap_or_default();
-
-            if lifetime > state.max_connection_lifetime {
-                state.max_connection_lifetime = lifetime;
+            let age = connection_info.age();
+            if age > state.max_connection_lifetime {
+                state.max_connection_lifetime = age;
             }
 
             let num_requests = connection_info.num_requests();

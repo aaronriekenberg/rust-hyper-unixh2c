@@ -27,13 +27,8 @@ struct ConnectionInfoDTO {
 
 impl From<ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: ConnectionInfo) -> Self {
-        let age = connection_info
-            .creation_time()
-            .elapsed()
-            .unwrap_or_default();
-
         // truncate to seconds
-        let age = Duration::from_secs(age.as_secs());
+        let age = Duration::from_secs(connection_info.age().as_secs());
 
         Self {
             id: connection_info.id().0,
