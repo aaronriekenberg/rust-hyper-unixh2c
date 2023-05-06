@@ -35,7 +35,7 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
         // truncate to seconds
         let age = Duration::from_secs(age.as_secs());
 
-        ConnectionInfoDTO {
+        Self {
             id: connection_info.id().0,
             server_protocol: *connection_info.server_protocol(),
             creation_time: local_date_time_to_string(&LocalDateTime::from(
