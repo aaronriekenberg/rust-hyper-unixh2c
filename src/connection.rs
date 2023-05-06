@@ -88,6 +88,7 @@ struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
     max_connection_lifetime: Duration,
+    max_requests_per_connection: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
 
@@ -97,6 +98,7 @@ impl InternalConnectionTrackerState {
             next_connection_id: 1,
             max_open_connections: 0,
             max_connection_lifetime: Duration::from_secs(0),
+            max_requests_per_connection: 0,
             id_to_connection_info: HashMap::new(),
         }
     }
@@ -155,6 +157,11 @@ impl ConnectionTracker {
             if lifetime > state.max_connection_lifetime {
                 state.max_connection_lifetime = lifetime;
             }
+
+            let num_requests = connection_info.num_requests();
+            if num_requests > state.max_requests_per_connection {
+                state.max_requests_per_connection = num_requests;
+            }
         }
 
         debug!(
@@ -169,6 +176,7 @@ impl ConnectionTracker {
         ConnectionTrackerState {
             max_open_connections: state.max_open_connections,
             max_connection_lifetime: state.max_connection_lifetime,
+            max_requests_per_connection: state.max_requests_per_connection,
             open_connections: state.id_to_connection_info.values().cloned().collect(),
         }
     }
@@ -185,5 +193,6 @@ impl ConnectionTracker {
 pub struct ConnectionTrackerState {
     pub max_open_connections: usize,
     pub max_connection_lifetime: Duration,
+    pub max_requests_per_connection: usize,
     pub open_connections: Vec<ConnectionInfo>,
 }

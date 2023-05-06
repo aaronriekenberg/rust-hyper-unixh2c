@@ -52,6 +52,7 @@ struct ConnectionTrackerStateDTO {
     max_open_connections: usize,
     #[serde(with = "humantime_serde")]
     max_connection_lifetime: Duration,
+    max_requests_per_connection: usize,
     num_open_connections: usize,
     open_connections: Vec<ConnectionInfoDTO>,
 }
@@ -78,6 +79,7 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
         Self {
             max_open_connections: state.max_open_connections,
             max_connection_lifetime,
+            max_requests_per_connection: state.max_requests_per_connection,
             num_open_connections,
             open_connections,
         }
