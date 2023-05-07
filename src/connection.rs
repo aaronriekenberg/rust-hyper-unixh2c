@@ -9,15 +9,18 @@ use std::{
 
 use getset::Getters;
 
-use tokio::sync::{OnceCell, RwLock};
+use tokio::{
+    sync::{OnceCell, RwLock},
+    time::{Duration, Instant},
+};
 
 use tracing::debug;
 
-use std::{cmp, time::Duration};
+use std::cmp;
 
 use crate::config::ServerProtocol;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ConnectionID(pub usize);
 
 #[derive(Clone, Debug, Getters)]
@@ -25,6 +28,7 @@ pub struct ConnectionID(pub usize);
 pub struct ConnectionInfo {
     id: ConnectionID,
     creation_time: SystemTime,
+    creation_instant: Instant,
     server_protocol: ServerProtocol,
     #[getset(skip)]
     num_requests: Arc<AtomicUsize>,
@@ -35,6 +39,7 @@ impl ConnectionInfo {
         Self {
             id,
             creation_time: SystemTime::now(),
+            creation_instant: Instant::now(),
             server_protocol,
             num_requests: Arc::new(AtomicUsize::new(0)),
         }
@@ -44,8 +49,8 @@ impl ConnectionInfo {
         self.num_requests.load(Ordering::Relaxed)
     }
 
-    pub fn age(&self) -> Duration {
-        self.creation_time().elapsed().unwrap_or_default()
+    pub fn age(&self, now: Instant) -> Duration {
+        now - self.creation_instant
     }
 }
 
@@ -91,7 +96,7 @@ impl Drop for ConnectionGuard {
 struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
-    past_max_connection_lifetime: Duration,
+    past_max_connection_age: Duration,
     past_max_requests_per_connection: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
 }
@@ -101,7 +106,7 @@ impl InternalConnectionTrackerState {
         Self {
             next_connection_id: 1,
             max_open_connections: 0,
-            past_max_connection_lifetime: Duration::from_secs(0),
+            past_max_connection_age: Duration::from_secs(0),
             past_max_requests_per_connection: 0,
             id_to_connection_info: HashMap::new(),
         }
@@ -113,12 +118,13 @@ impl InternalConnectionTrackerState {
         ConnectionID(connection_id)
     }
 
-    fn max_connection_lifetime(&self) -> Duration {
+    fn max_connection_age(&self) -> Duration {
+        let now = Instant::now();
         cmp::max(
-            self.past_max_connection_lifetime,
+            self.past_max_connection_age,
             self.id_to_connection_info
                 .values()
-                .map(|c| c.age())
+                .map(|c| c.age(now))
                 .max()
                 .unwrap_or_default(),
         )
@@ -141,7 +147,7 @@ pub struct ConnectionTracker {
 }
 
 impl ConnectionTracker {
-    fn new() -> Self {
+    async fn new() -> Self {
         Self {
             state: RwLock::new(InternalConnectionTrackerState::new()),
         }
@@ -173,8 +179,10 @@ impl ConnectionTracker {
         let mut state = self.state.write().await;
 
         if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
-            state.past_max_connection_lifetime =
-                cmp::max(state.past_max_connection_lifetime, connection_info.age());
+            state.past_max_connection_age = cmp::max(
+                state.past_max_connection_age,
+                connection_info.age(Instant::now()),
+            );
 
             state.past_max_requests_per_connection = cmp::max(
                 state.past_max_requests_per_connection,
@@ -193,24 +201,22 @@ impl ConnectionTracker {
 
         ConnectionTrackerState {
             max_open_connections: state.max_open_connections,
-            max_connection_lifetime: state.max_connection_lifetime(),
+            max_connection_age: state.max_connection_age(),
             max_requests_per_connection: state.max_requests_per_connection(),
             open_connections: state.id_to_connection_info.values().cloned().collect(),
         }
     }
 
-    pub async fn instance() -> &'static ConnectionTracker {
+    pub async fn instance() -> &'static Self {
         static INSTANCE: OnceCell<ConnectionTracker> = OnceCell::const_new();
 
-        INSTANCE
-            .get_or_init(|| async move { ConnectionTracker::new() })
-            .await
+        INSTANCE.get_or_init(Self::new).await
     }
 }
 
 pub struct ConnectionTrackerState {
     pub max_open_connections: usize,
-    pub max_connection_lifetime: Duration,
+    pub max_connection_age: Duration,
     pub max_requests_per_connection: usize,
     pub open_connections: Vec<ConnectionInfo>,
 }

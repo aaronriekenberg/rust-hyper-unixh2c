@@ -6,11 +6,13 @@ use hyper::{Body, Method, Response};
 
 use serde::Serialize;
 
-use std::time::Duration;
+use tokio::time::Instant;
+
+use std::{collections::BTreeMap, time::Duration};
 
 use crate::{
     config::ServerProtocol,
-    connection::{ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
+    connection::{ConnectionID, ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
     time::{local_date_time_to_string, LocalDateTime},
 };
@@ -28,7 +30,7 @@ struct ConnectionInfoDTO {
 impl From<ConnectionInfo> for ConnectionInfoDTO {
     fn from(connection_info: ConnectionInfo) -> Self {
         // truncate to seconds
-        let age = Duration::from_secs(connection_info.age().as_secs());
+        let age = Duration::from_secs(connection_info.age(Instant::now()).as_secs());
 
         Self {
             id: connection_info.id().0,
@@ -54,22 +56,24 @@ struct ConnectionTrackerStateDTO {
 
 impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
     fn from(state: ConnectionTrackerState) -> Self {
-        let mut open_connections: Vec<ConnectionInfoDTO> = state
+        let id_to_open_connection: BTreeMap<ConnectionID, ConnectionInfo> = state
             .open_connections
             .into_iter()
-            .map(|c| c.into())
+            .map(|c| (*c.id(), c))
             .collect();
 
-        open_connections.sort_unstable_by_key(|c| c.id);
+        let num_open_connections = id_to_open_connection.len();
 
-        let open_connections = open_connections;
-
-        let num_open_connections = open_connections.len();
-
-        let open_connections = open_connections.into_iter().take(20).collect();
+        // 20 newest connections with descending ids in reverse order
+        let open_connections = id_to_open_connection
+            .into_iter()
+            .rev()
+            .take(20)
+            .map(|(_, v)| v.into())
+            .collect();
 
         // truncate to seconds
-        let max_connection_lifetime = Duration::from_secs(state.max_connection_lifetime.as_secs());
+        let max_connection_lifetime = Duration::from_secs(state.max_connection_age.as_secs());
 
         Self {
             max_open_connections: state.max_open_connections,
