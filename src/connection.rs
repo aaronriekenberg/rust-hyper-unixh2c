@@ -7,7 +7,7 @@ use std::{
     time::SystemTime,
 };
 
-use getset::Getters;
+use getset::CopyGetters;
 
 use tokio::{
     sync::{OnceCell, RwLock},
@@ -16,15 +16,23 @@ use tokio::{
 
 use tracing::debug;
 
-use std::cmp;
+use std::{cmp, ops::Deref};
 
 use crate::config::ServerProtocol;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct ConnectionID(pub usize);
+pub struct ConnectionID(usize);
 
-#[derive(Clone, Debug, Getters)]
-#[getset(get = "pub")]
+impl Deref for ConnectionID {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug, CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct ConnectionInfo {
     id: ConnectionID,
     creation_time: SystemTime,

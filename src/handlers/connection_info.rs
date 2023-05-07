@@ -33,10 +33,10 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
         let age = Duration::from_secs(connection_info.age(Instant::now()).as_secs());
 
         Self {
-            id: connection_info.id().0,
-            server_protocol: *connection_info.server_protocol(),
+            id: *connection_info.id(),
+            server_protocol: connection_info.server_protocol(),
             creation_time: local_date_time_to_string(&LocalDateTime::from(
-                *connection_info.creation_time(),
+                connection_info.creation_time(),
             )),
             age,
             num_requests: connection_info.num_requests(),
@@ -59,7 +59,7 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
         let id_to_open_connection: BTreeMap<ConnectionID, ConnectionInfo> = state
             .open_connections
             .into_iter()
-            .map(|c| (*c.id(), c))
+            .map(|c| (c.id(), c))
             .collect();
 
         let num_open_connections = id_to_open_connection.len();

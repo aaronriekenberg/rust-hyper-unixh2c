@@ -1,19 +1,34 @@
-use getset::Getters;
+use getset::{CopyGetters, Getters};
 
 use hyper::{http::Request, Body};
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    ops::Deref,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use crate::connection::ConnectionID;
 
 #[derive(Clone, Copy, Debug)]
-pub struct RequestID(pub usize);
+pub struct RequestID(usize);
 
-#[derive(Debug, Getters)]
-#[getset(get = "pub")]
+impl Deref for RequestID {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, Getters, CopyGetters)]
 pub struct HttpRequest {
+    #[getset(get_copy = "pub")]
     connection_id: ConnectionID,
+
+    #[getset(get_copy = "pub")]
     request_id: RequestID,
+
+    #[getset(get = "pub")]
     hyper_request: Request<Body>,
 }
 
