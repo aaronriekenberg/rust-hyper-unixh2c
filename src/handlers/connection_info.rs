@@ -33,7 +33,7 @@ impl From<ConnectionInfo> for ConnectionInfoDTO {
         let age = Duration::from_secs(connection_info.age(Instant::now()).as_secs());
 
         Self {
-            id: *connection_info.id(),
+            id: connection_info.id().as_usize(),
             server_protocol: connection_info.server_protocol(),
             creation_time: local_date_time_to_string(&LocalDateTime::from(
                 connection_info.creation_time(),

@@ -16,18 +16,16 @@ use tokio::{
 
 use tracing::debug;
 
-use std::{cmp, ops::Deref};
+use std::cmp;
 
 use crate::config::ServerProtocol;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ConnectionID(usize);
 
-impl Deref for ConnectionID {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl ConnectionID {
+    pub fn as_usize(&self) -> usize {
+        self.0
     }
 }
 

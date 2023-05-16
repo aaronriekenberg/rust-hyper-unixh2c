@@ -36,7 +36,7 @@ impl Server {
         })
     }
 
-    #[instrument(skip_all, fields(req_id = *request_id))]
+    #[instrument(skip_all, fields(req_id = request_id.as_usize()))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
@@ -53,7 +53,7 @@ impl Server {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(conn_id = *connection.id()))]
+    #[instrument(skip_all, fields(conn_id = connection.id().as_usize()))]
     async fn handle_connection(
         self: Arc<Self>,
         unix_stream: UnixStream,

@@ -31,10 +31,10 @@ impl<'a> From<&'a HttpRequest> for RequestFields<'a> {
         };
 
         Self {
-            connection_id: *request.connection_id(),
+            connection_id: request.connection_id().as_usize(),
             http_version,
             method: hyper_request.method().as_str(),
-            request_id: *request.request_id(),
+            request_id: request.request_id().as_usize(),
             request_uri_path: hyper_request.uri().path(),
         }
     }
