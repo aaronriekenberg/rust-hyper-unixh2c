@@ -101,6 +101,7 @@ impl Drop for ConnectionGuard {
     }
 }
 
+#[derive(Default)]
 struct InternalConnectionTrackerState {
     next_connection_id: usize,
     max_open_connections: usize,
@@ -113,10 +114,7 @@ impl InternalConnectionTrackerState {
     fn new() -> Self {
         Self {
             next_connection_id: 1,
-            max_open_connections: 0,
-            past_max_connection_age: Duration::from_secs(0),
-            past_max_requests_per_connection: 0,
-            id_to_connection_info: HashMap::new(),
+            ..Default::default()
         }
     }
 
