@@ -152,14 +152,20 @@ impl InternalConnectionTrackerState {
 
         self.metrics.update_for_new_connection(num_connections);
 
-        debug!("add_new_connection num_connections = {}", num_connections);
+        debug!("add_connection num_connections = {}", num_connections);
 
         ConnectionGuard::new(connection_id, num_requests)
     }
 
-    fn remove_connection(&mut self, removed_connection_info: &ConnectionInfo) {
-        self.metrics
-            .update_for_removed_connection(removed_connection_info);
+    fn remove_connection(&mut self, connection_id: ConnectionID) {
+        if let Some(connection_info) = self.id_to_connection_info.remove(&connection_id) {
+            self.metrics.update_for_removed_connection(&connection_info);
+        }
+
+        debug!(
+            "remove_connection id_to_connection_info.len = {}",
+            self.id_to_connection_info.len()
+        );
     }
 
     fn max_connection_age(&self) -> Duration {
@@ -206,14 +212,7 @@ impl ConnectionTracker {
     async fn remove_connection(&self, connection_id: ConnectionID) {
         let mut state = self.state.write().await;
 
-        if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
-            state.remove_connection(&connection_info);
-        }
-
-        debug!(
-            "remove_connection id_to_connection_info.len = {}",
-            state.id_to_connection_info.len()
-        );
+        state.remove_connection(connection_id);
     }
 
     pub async fn state(&self) -> ConnectionTrackerState {
