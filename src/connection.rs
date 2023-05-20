@@ -1,11 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
-    time::SystemTime,
-};
+mod internal;
 
 use getset::CopyGetters;
 
@@ -14,9 +7,13 @@ use tokio::{
     time::{Duration, Instant},
 };
 
-use tracing::debug;
-
-use std::cmp;
+use std::{
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::SystemTime,
+};
 
 use crate::config::ServerProtocol;
 
@@ -92,114 +89,14 @@ impl Drop for ConnectionGuard {
     }
 }
 
-#[derive(Default)]
-struct InternalConnectionTrackerStateMetrics {
-    max_open_connections: usize,
-    past_max_connection_age: Duration,
-    past_max_requests_per_connection: usize,
-}
-
-impl InternalConnectionTrackerStateMetrics {
-    fn update_for_new_connection(&mut self, num_connections: usize) {
-        self.max_open_connections = cmp::max(self.max_open_connections, num_connections);
-    }
-
-    fn update_for_removed_connection(&mut self, removed_connection_info: &ConnectionInfo) {
-        self.past_max_connection_age = cmp::max(
-            self.past_max_connection_age,
-            removed_connection_info.age(Instant::now()),
-        );
-
-        self.past_max_requests_per_connection = cmp::max(
-            self.past_max_requests_per_connection,
-            removed_connection_info.num_requests(),
-        );
-    }
-}
-
-#[derive(Default)]
-struct InternalConnectionTrackerState {
-    next_connection_id: usize,
-    id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
-    metrics: InternalConnectionTrackerStateMetrics,
-}
-
-impl InternalConnectionTrackerState {
-    fn new() -> Self {
-        Self {
-            next_connection_id: 1,
-            ..Default::default()
-        }
-    }
-
-    fn next_connection_id(&mut self) -> ConnectionID {
-        let connection_id = self.next_connection_id;
-        self.next_connection_id += 1;
-        ConnectionID(connection_id)
-    }
-
-    fn add_connection(&mut self, server_protocol: ServerProtocol) -> ConnectionGuard {
-        let connection_id = self.next_connection_id();
-
-        let connection_info = ConnectionInfo::new(connection_id, server_protocol);
-
-        let num_requests = Arc::clone(&connection_info.num_requests);
-
-        self.id_to_connection_info
-            .insert(connection_id, connection_info);
-
-        let num_connections = self.id_to_connection_info.len();
-
-        self.metrics.update_for_new_connection(num_connections);
-
-        debug!("add_connection num_connections = {}", num_connections);
-
-        ConnectionGuard::new(connection_id, num_requests)
-    }
-
-    fn remove_connection(&mut self, connection_id: ConnectionID) {
-        if let Some(connection_info) = self.id_to_connection_info.remove(&connection_id) {
-            self.metrics.update_for_removed_connection(&connection_info);
-        }
-
-        debug!(
-            "remove_connection id_to_connection_info.len = {}",
-            self.id_to_connection_info.len()
-        );
-    }
-
-    fn max_connection_age(&self) -> Duration {
-        let now = Instant::now();
-        cmp::max(
-            self.metrics.past_max_connection_age,
-            self.id_to_connection_info
-                .values()
-                .map(|c| c.age(now))
-                .max()
-                .unwrap_or_default(),
-        )
-    }
-
-    fn max_requests_per_connection(&self) -> usize {
-        cmp::max(
-            self.metrics.past_max_requests_per_connection,
-            self.id_to_connection_info
-                .values()
-                .map(|c| c.num_requests())
-                .max()
-                .unwrap_or_default(),
-        )
-    }
-}
-
 pub struct ConnectionTracker {
-    state: RwLock<InternalConnectionTrackerState>,
+    state: RwLock<internal::ConnectionTrackerState>,
 }
 
 impl ConnectionTracker {
     async fn new() -> Self {
         Self {
-            state: RwLock::new(InternalConnectionTrackerState::new()),
+            state: RwLock::new(internal::ConnectionTrackerState::new()),
         }
     }
 
@@ -219,10 +116,10 @@ impl ConnectionTracker {
         let state = self.state.read().await;
 
         ConnectionTrackerState {
-            max_open_connections: state.metrics.max_open_connections,
+            max_open_connections: state.max_open_connections(),
             max_connection_age: state.max_connection_age(),
             max_requests_per_connection: state.max_requests_per_connection(),
-            open_connections: state.id_to_connection_info.values().cloned().collect(),
+            open_connections: state.open_connections(),
         }
     }
 
