@@ -489,7 +489,7 @@ dependencies = [
 
 [[package]]
 name = "rust-hyper-unixh2c"
-version = "0.0.40"
+version = "0.0.41"
 dependencies = [
  "anyhow",
  "async-trait",
