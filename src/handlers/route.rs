@@ -10,7 +10,9 @@ use async_trait::async_trait;
 
 use hyper::{http::Method, Body, Response};
 
-use tracing::debug;
+use hyper_staticfile::ResolveResult::Found;
+
+use tracing::{debug, info};
 
 use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
 
@@ -85,6 +87,25 @@ impl Router {
             path: Cow::from(path),
         })
     }
+
+    async fn handle_static_file(&self, request: &HttpRequest) -> Response<Body> {
+        info!("handle_static_file request = {:?}", request);
+
+        let root = Path::new("/Users/aaron/aaronr.digital");
+
+        let resolve_result = hyper_staticfile::resolve(&root, request.hyper_request())
+            .await
+            .unwrap();
+
+        info!("resolve_result = {:?}", resolve_result);
+
+        let response = hyper_staticfile::ResponseBuilder::new()
+            .request(request.hyper_request())
+            .build(resolve_result)
+            .unwrap();
+
+        response
+    }
 }
 
 #[async_trait]
@@ -95,7 +116,7 @@ impl RequestHandler for Router {
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
         let response = match handler_option {
-            None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
+            None => self.handle_static_file(request).await,
             Some(handler) => handler.handle(request).await,
         };
 
