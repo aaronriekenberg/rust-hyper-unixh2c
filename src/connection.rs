@@ -61,22 +61,13 @@ impl ConnectionInfo {
 }
 
 pub struct ConnectionGuard {
-    connection_tracker: &'static ConnectionTracker,
     id: ConnectionID,
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionGuard {
-    fn new(
-        connection_tracker: &'static ConnectionTracker,
-        id: ConnectionID,
-        num_requests: Arc<AtomicUsize>,
-    ) -> Self {
-        Self {
-            connection_tracker,
-            id,
-            num_requests,
-        }
+    fn new(id: ConnectionID, num_requests: Arc<AtomicUsize>) -> Self {
+        Self { id, num_requests }
     }
 
     pub fn id(&self) -> ConnectionID {
@@ -90,22 +81,47 @@ impl ConnectionGuard {
 
 impl Drop for ConnectionGuard {
     fn drop(&mut self) {
-        let connection_tracker = self.connection_tracker;
         let id = self.id;
 
         tokio::task::spawn(async move {
-            connection_tracker.remove_connection(id).await;
+            ConnectionTracker::instance()
+                .await
+                .remove_connection(id)
+                .await;
         });
+    }
+}
+
+#[derive(Default)]
+struct InternalConnectionTrackerStateMetrics {
+    max_open_connections: usize,
+    past_max_connection_age: Duration,
+    past_max_requests_per_connection: usize,
+}
+
+impl InternalConnectionTrackerStateMetrics {
+    fn update_for_new_connection(&mut self, num_connections: usize) {
+        self.max_open_connections = cmp::max(self.max_open_connections, num_connections);
+    }
+
+    fn update_for_removed_connection(&mut self, removed_connection_info: &ConnectionInfo) {
+        self.past_max_connection_age = cmp::max(
+            self.past_max_connection_age,
+            removed_connection_info.age(Instant::now()),
+        );
+
+        self.past_max_requests_per_connection = cmp::max(
+            self.past_max_requests_per_connection,
+            removed_connection_info.num_requests(),
+        );
     }
 }
 
 #[derive(Default)]
 struct InternalConnectionTrackerState {
     next_connection_id: usize,
-    max_open_connections: usize,
-    past_max_connection_age: Duration,
-    past_max_requests_per_connection: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
+    metrics: InternalConnectionTrackerStateMetrics,
 }
 
 impl InternalConnectionTrackerState {
@@ -122,10 +138,34 @@ impl InternalConnectionTrackerState {
         ConnectionID(connection_id)
     }
 
+    fn add_connection(&mut self, server_protocol: ServerProtocol) -> ConnectionGuard {
+        let connection_id = self.next_connection_id();
+
+        let connection_info = ConnectionInfo::new(connection_id, server_protocol);
+
+        let num_requests = Arc::clone(&connection_info.num_requests);
+
+        self.id_to_connection_info
+            .insert(connection_id, connection_info);
+
+        let num_connections = self.id_to_connection_info.len();
+
+        self.metrics.update_for_new_connection(num_connections);
+
+        debug!("add_new_connection num_connections = {}", num_connections);
+
+        ConnectionGuard::new(connection_id, num_requests)
+    }
+
+    fn remove_connection(&mut self, removed_connection_info: &ConnectionInfo) {
+        self.metrics
+            .update_for_removed_connection(removed_connection_info);
+    }
+
     fn max_connection_age(&self) -> Duration {
         let now = Instant::now();
         cmp::max(
-            self.past_max_connection_age,
+            self.metrics.past_max_connection_age,
             self.id_to_connection_info
                 .values()
                 .map(|c| c.age(now))
@@ -136,7 +176,7 @@ impl InternalConnectionTrackerState {
 
     fn max_requests_per_connection(&self) -> usize {
         cmp::max(
-            self.past_max_requests_per_connection,
+            self.metrics.past_max_requests_per_connection,
             self.id_to_connection_info
                 .values()
                 .map(|c| c.num_requests())
@@ -157,41 +197,17 @@ impl ConnectionTracker {
         }
     }
 
-    pub async fn add_connection(&'static self, server_protocol: ServerProtocol) -> ConnectionGuard {
+    pub async fn add_connection(&self, server_protocol: ServerProtocol) -> ConnectionGuard {
         let mut state = self.state.write().await;
 
-        let connection_id = state.next_connection_id();
-
-        let connection_info = ConnectionInfo::new(connection_id, server_protocol);
-
-        let num_requests = Arc::clone(&connection_info.num_requests);
-
-        state
-            .id_to_connection_info
-            .insert(connection_id, connection_info);
-
-        let num_connections = state.id_to_connection_info.len();
-
-        state.max_open_connections = cmp::max(state.max_open_connections, num_connections);
-
-        debug!("add_new_connection num_connections = {}", num_connections,);
-
-        ConnectionGuard::new(self, connection_id, num_requests)
+        state.add_connection(server_protocol)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {
         let mut state = self.state.write().await;
 
         if let Some(connection_info) = state.id_to_connection_info.remove(&connection_id) {
-            state.past_max_connection_age = cmp::max(
-                state.past_max_connection_age,
-                connection_info.age(Instant::now()),
-            );
-
-            state.past_max_requests_per_connection = cmp::max(
-                state.past_max_requests_per_connection,
-                connection_info.num_requests(),
-            );
+            state.remove_connection(&connection_info);
         }
 
         debug!(
@@ -204,7 +220,7 @@ impl ConnectionTracker {
         let state = self.state.read().await;
 
         ConnectionTrackerState {
-            max_open_connections: state.max_open_connections,
+            max_open_connections: state.metrics.max_open_connections,
             max_connection_age: state.max_connection_age(),
             max_requests_per_connection: state.max_requests_per_connection(),
             open_connections: state.id_to_connection_info.values().cloned().collect(),
