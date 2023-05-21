@@ -119,7 +119,7 @@ impl ConnectionTracker {
             max_open_connections: state.max_open_connections(),
             max_connection_age: state.max_connection_age(),
             max_requests_per_connection: state.max_requests_per_connection(),
-            open_connections: state.open_connections(),
+            open_connections: state.open_connections().cloned().collect(),
         }
     }
 

@@ -9,13 +9,13 @@ use crate::config::ServerProtocol;
 use super::{ConnectionGuard, ConnectionID, ConnectionInfo};
 
 #[derive(Default)]
-struct ConnectionTrackerStateMetrics {
+struct ConnectionTrackerMetrics {
     max_open_connections: usize,
     past_max_connection_age: Duration,
     past_max_requests_per_connection: usize,
 }
 
-impl ConnectionTrackerStateMetrics {
+impl ConnectionTrackerMetrics {
     fn update_for_new_connection(&mut self, num_connections: usize) {
         self.max_open_connections = cmp::max(self.max_open_connections, num_connections);
     }
@@ -37,7 +37,7 @@ impl ConnectionTrackerStateMetrics {
 pub struct ConnectionTrackerState {
     next_connection_id: usize,
     id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
-    metrics: ConnectionTrackerStateMetrics,
+    metrics: ConnectionTrackerMetrics,
 }
 
 impl ConnectionTrackerState {
@@ -111,7 +111,7 @@ impl ConnectionTrackerState {
         )
     }
 
-    pub fn open_connections(&self) -> Vec<ConnectionInfo> {
-        self.id_to_connection_info.values().cloned().collect()
+    pub fn open_connections(&self) -> impl Iterator<Item = &ConnectionInfo> {
+        self.id_to_connection_info.values()
     }
 }
