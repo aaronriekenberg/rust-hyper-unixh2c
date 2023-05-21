@@ -111,7 +111,7 @@ impl ConnectionTrackerState {
         )
     }
 
-    pub fn open_connections(&self) -> Vec<ConnectionInfo> {
-        self.id_to_connection_info.values().cloned().collect()
+    pub fn open_connections(&self) -> impl Iterator<Item = &ConnectionInfo> {
+        self.id_to_connection_info.values()
     }
 }
