@@ -2,6 +2,7 @@ mod commands;
 mod connection_info;
 mod request_info;
 mod route;
+mod static_file;
 mod utils;
 mod version_info;
 
@@ -27,5 +28,7 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     routes.append(&mut version_info::create_routes().await);
 
-    Ok(Box::new(route::Router::new(routes)?))
+    let default_route = static_file::create_default_route().await;
+
+    Ok(Box::new(route::Router::new(routes, default_route)?))
 }

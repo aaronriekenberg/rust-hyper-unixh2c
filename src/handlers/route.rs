@@ -1,9 +1,3 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
-
 use anyhow::Context;
 
 use async_trait::async_trait;
@@ -13,6 +7,12 @@ use hyper::{http::Method, Body, Response};
 use hyper_staticfile::ResolveResult::Found;
 
 use tracing::{debug, info};
+
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
 
@@ -39,12 +39,17 @@ impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
 
 pub struct Router {
     route_key_to_handler: HashMap<RouteKey<'static>, Box<dyn RequestHandler>>,
+    default_route: Box<dyn RequestHandler>,
 }
 
 impl Router {
-    pub fn new(routes: Vec<RouteInfo>) -> anyhow::Result<Self> {
+    pub fn new(
+        routes: Vec<RouteInfo>,
+        default_route: Box<dyn RequestHandler>,
+    ) -> anyhow::Result<Self> {
         let mut router = Self {
             route_key_to_handler: HashMap::with_capacity(routes.len()),
+            default_route,
         };
 
         let context_path = Path::new(crate::config::instance().context_configuration().context());
@@ -87,25 +92,6 @@ impl Router {
             path: Cow::from(path),
         })
     }
-
-    async fn handle_static_file(&self, request: &HttpRequest) -> Response<Body> {
-        info!("handle_static_file request = {:?}", request);
-
-        let root = Path::new("/Users/aaron/aaronr.digital");
-
-        let resolve_result = hyper_staticfile::resolve(&root, request.hyper_request())
-            .await
-            .unwrap();
-
-        info!("resolve_result = {:?}", resolve_result);
-
-        let response = hyper_staticfile::ResponseBuilder::new()
-            .request(request.hyper_request())
-            .build(resolve_result)
-            .unwrap();
-
-        response
-    }
 }
 
 #[async_trait]
@@ -116,8 +102,8 @@ impl RequestHandler for Router {
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
         let response = match handler_option {
-            None => self.handle_static_file(request).await,
             Some(handler) => handler.handle(request).await,
+            None => self.default_route.handle(request).await,
         };
 
         debug!("end handle");
