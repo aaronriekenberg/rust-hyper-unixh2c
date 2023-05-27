@@ -2,19 +2,22 @@ use anyhow::Context;
 
 use async_trait::async_trait;
 
-use hyper::{http::Method, Body, Response};
+use bytes::Bytes;
 
-use hyper_staticfile::ResolveResult::Found;
+use http_body_util::combinators::BoxBody;
 
-use tracing::{debug, info};
+use hyper::http::{Method, Response};
+
+use tracing::debug;
 
 use std::{
     borrow::Cow,
     collections::HashMap,
+    convert::Infallible,
     path::{Path, PathBuf},
 };
 
-use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
+use crate::handlers::{HttpRequest, RequestHandler};
 
 pub struct RouteInfo {
     pub method: &'static Method,
@@ -96,7 +99,7 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
         debug!("begin handle");
 
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));

@@ -1,13 +1,14 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{convert::Infallible, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 
 use async_trait::async_trait;
 
-use hyper::{
-    http::{Method, Response, StatusCode},
-    Body,
-};
+use bytes::Bytes;
+
+use http_body_util::{combinators::BoxBody,BodyExt, Full};
+
+use hyper::http::{Method, Response, StatusCode};
 
 use tracing::warn;
 
@@ -54,9 +55,9 @@ impl AllCommandsHandler {
 
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
         let json_string = Self::json_string().await.unwrap();
-        build_json_body_response(Body::from(json_string))
+        build_json_body_response(Full::new(json_string.into()).boxed())
     }
 }
 
@@ -128,7 +129,7 @@ impl RunCommandHandler {
         &self,
         command_result: Result<std::process::Output, std::io::Error>,
         command_duration: Duration,
-    ) -> Response<Body> {
+    ) -> Response<BoxBody<Bytes, Infallible>> {
         let response = RunCommandResponse {
             now: current_local_date_time_string(),
             command_duration_ms: command_duration.as_millis(),
@@ -154,7 +155,7 @@ impl RunCommandHandler {
 
 #[async_trait]
 impl RequestHandler for RunCommandHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
         let run_command_permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);

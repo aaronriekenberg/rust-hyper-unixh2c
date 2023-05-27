@@ -1,16 +1,17 @@
-use std::path::PathBuf;
+use anyhow::Context;
 
 use async_trait::async_trait;
 
-use hyper::{Body, Method, Response};
+use bytes::Bytes;
 
-use tracing::{debug, info};
+use http_body_util::{combinators::BoxBody, BodyExt};
 
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    path::{Path},
-};
+use hyper::{body::Body, http::Response};
+
+use hyper_staticfile::vfs::TokioFileOpener;
+use tracing::info;
+
+use std::{convert::Infallible, path::Path};
 
 use crate::{
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
@@ -21,12 +22,24 @@ struct StaticFileHandler;
 
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+    async fn handle(
+        &self,
+        request: &HttpRequest,
+    ) -> Response<
+        BoxBody<
+            dyn hyper::body::Body<Data = TokioFileOpener::File,Error=Infallible>,
+            Error = Infallible,
+        >,
+        Infallible,
+    > {
         info!("handle_static_file request = {:?}", request);
 
         let root = Path::new("/Users/aaron/aaronr.digital");
 
-        let resolve_result = hyper_staticfile::resolve(&root, request.hyper_request())
+        let resolver = hyper_staticfile::Resolver::new(root);
+
+        let resolve_result = resolver
+            .resolve_request(request.hyper_request())
             .await
             .unwrap();
 
@@ -41,6 +54,6 @@ impl RequestHandler for StaticFileHandler {
     }
 }
 
-pub async fn create_default_route() -> Box<dyn RequestHandler>{
-     Box::new(StaticFileHandler)
+pub async fn create_default_route() -> Box<dyn RequestHandler> {
+    Box::new(StaticFileHandler)
 }

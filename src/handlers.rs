@@ -6,15 +6,21 @@ mod static_file;
 mod utils;
 mod version_info;
 
+use bytes::Bytes;
+
 use async_trait::async_trait;
 
-use hyper::{http::Response, Body};
+use hyper::http::Response;
+
+use http_body_util::combinators::BoxBody;
+
+use std::convert::Infallible;
 
 use crate::request::HttpRequest;
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body>;
+    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>>;
 }
 
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {

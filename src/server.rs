@@ -1,9 +1,12 @@
+use bytes::Bytes;
+
+use http_body_util::combinators::BoxBody;
+
 use hyper::{
     http::{Request, Response},
     server::conn::http1::Builder as HyperHTTP1Builder,
     server::conn::http2::Builder as HyperHTTP2Builder,
     service::service_fn,
-    Body,
 };
 
 use tracing::{debug, info, instrument, warn, Instrument};
@@ -41,8 +44,8 @@ impl Server {
         self: Arc<Self>,
         connection_id: ConnectionID,
         request_id: RequestID,
-        hyper_request: Request<Body>,
-    ) -> Result<Response<Body>, Infallible> {
+        hyper_request: Request<hyper::body::Incoming>,
+    ) -> Result<Response<BoxBody<Bytes, Infallible>>, Infallible> {
         debug!("begin handle_request");
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);

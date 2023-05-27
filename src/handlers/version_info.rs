@@ -1,8 +1,12 @@
-use std::path::PathBuf;
-
 use async_trait::async_trait;
 
-use hyper::{Body, Method, Response};
+use bytes::Bytes;
+
+use http_body_util::combinators::BoxBody;
+
+use hyper::http::{Method, Response, StatusCode};
+
+use std::{convert::Infallible, path::PathBuf};
 
 use crate::{
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
@@ -13,7 +17,7 @@ struct VersionInfoHandler;
 
 #[async_trait]
 impl RequestHandler for VersionInfoHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
         let version_info = get_verison_info().await;
 
         build_json_response(version_info)
