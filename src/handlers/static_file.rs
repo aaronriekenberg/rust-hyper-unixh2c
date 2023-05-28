@@ -2,36 +2,65 @@ use async_trait::async_trait;
 
 use http_body_util::BodyExt;
 
-use hyper::http::Response;
+use hyper::http::{Response, StatusCode};
 
-use tracing::info;
+use hyper_staticfile::{vfs::TokioFileOpener, Resolver};
+
+use tracing::{info, warn};
 
 use std::path::Path;
 
-use crate::handlers::{HttpRequest, RequestHandler, ResponseBody};
+use crate::{
+    handlers::{utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody},
+    response::CacheControl,
+};
 
-struct StaticFileHandler;
+struct StaticFileHandler {
+    resolver: Resolver<TokioFileOpener>,
+}
+
+impl StaticFileHandler {
+    fn new() -> Self {
+        let config = crate::config::instance();
+        let root = Path::new(config.static_file_configuration().path());
+
+        Self {
+            resolver: hyper_staticfile::Resolver::new(root),
+        }
+    }
+}
 
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         info!("handle_static_file request = {:?}", request);
 
-        let root = Path::new("/Users/aaron/aaronr.digital");
-
-        let resolver = hyper_staticfile::Resolver::new(root);
-
-        let resolve_result = resolver
-            .resolve_request(request.hyper_request())
-            .await
-            .unwrap();
+        let resolve_result = match self.resolver.resolve_request(request.hyper_request()).await {
+            Ok(resolve_result) => resolve_result,
+            Err(e) => {
+                warn!("resolve_request error e = {}", e);
+                return build_status_code_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    CacheControl::NoCache,
+                );
+            }
+        };
 
         info!("resolve_result = {:?}", resolve_result);
 
-        let response = hyper_staticfile::ResponseBuilder::new()
+        let response = match hyper_staticfile::ResponseBuilder::new()
             .request(request.hyper_request())
             .build(resolve_result)
-            .unwrap();
+        {
+            Ok(response) => response,
+            Err(e) => {
+                warn!("ResponseBuilder.build error e = {}", e);
+                return build_status_code_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    CacheControl::NoCache,
+                );
+            }
+        };
 
         let (parts, body) = response.into_parts();
 
@@ -42,5 +71,5 @@ impl RequestHandler for StaticFileHandler {
 }
 
 pub async fn create_default_route() -> Box<dyn RequestHandler> {
-    Box::new(StaticFileHandler)
+    Box::new(StaticFileHandler::new())
 }

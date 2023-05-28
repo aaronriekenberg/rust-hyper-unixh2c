@@ -29,5 +29,8 @@
                 "command": "/usr/bin/w"
             }
         ]
+    },
+    "static_file_configuration": {
+        "path": "/Users/aaron/aaronr.digital"
     }
 }

@@ -49,10 +49,17 @@ pub struct CommandConfiguration {
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
 #[getset(get = "pub")]
+pub struct StaticFileConfiguration {
+    path: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Getters)]
+#[getset(get = "pub")]
 pub struct Configuration {
     context_configuration: ContextConfiguration,
     server_configuration: ServerConfiguration,
     command_configuration: CommandConfiguration,
+    static_file_configuration: StaticFileConfiguration,
 }
 
 static CONFIGURATION_INSTANCE: OnceCell<Configuration> = OnceCell::const_new();
