@@ -22,6 +22,7 @@ use crate::{
     handlers::route::RouteInfo,
     handlers::utils::{build_json_body_response, build_json_response, build_status_code_response},
     handlers::{HttpRequest, RequestHandler, ResponseBody},
+    response::CacheControl,
     time::current_local_date_time_string,
 };
 
@@ -53,7 +54,10 @@ impl AllCommandsHandler {
 impl RequestHandler for AllCommandsHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let json_string = Self::json_string().await.unwrap();
-        build_json_body_response(Full::from(json_string).map_err(|e| e.into()).boxed())
+        build_json_body_response(
+            Full::from(json_string).map_err(|e| e.into()).boxed(),
+            CacheControl::NoCache,
+        )
     }
 }
 
@@ -145,7 +149,7 @@ impl RunCommandHandler {
             },
         };
 
-        build_json_response(response)
+        build_json_response(response, CacheControl::NoCache)
     }
 }
 
@@ -155,7 +159,10 @@ impl RequestHandler for RunCommandHandler {
         let run_command_permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);
-                return build_status_code_response(StatusCode::TOO_MANY_REQUESTS);
+                return build_status_code_response(
+                    StatusCode::TOO_MANY_REQUESTS,
+                    CacheControl::NoCache,
+                );
             }
             Ok(permit) => permit,
         };

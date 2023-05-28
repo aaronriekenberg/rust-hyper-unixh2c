@@ -8,6 +8,7 @@ use crate::{
     handlers::{
         route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
     },
+    response::CacheControl,
     version::get_verison_info,
 };
 
@@ -18,7 +19,7 @@ impl RequestHandler for VersionInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let version_info = get_verison_info().await;
 
-        build_json_response(version_info)
+        build_json_response(version_info, CacheControl::NoCache)
     }
 }
 

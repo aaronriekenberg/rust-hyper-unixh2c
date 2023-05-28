@@ -16,6 +16,7 @@ use crate::{
     handlers::{
         route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
     },
+    response::CacheControl,
     time::{local_date_time_to_string, LocalDateTime},
 };
 
@@ -105,7 +106,7 @@ impl RequestHandler for ServerInfoHandler {
         let connection_tracker_state_dto: ConnectionTrackerStateDTO =
             self.connection_tracker.state().await.into();
 
-        build_json_response(connection_tracker_state_dto)
+        build_json_response(connection_tracker_state_dto, CacheControl::NoCache)
     }
 }
 
