@@ -14,8 +14,9 @@ use std::{convert::Infallible, sync::Arc};
 use crate::{
     config::{ServerConfiguration, ServerProtocol},
     connection::{ConnectionGuard, ConnectionID, ConnectionTracker},
-    handlers::{RequestHandler, ResponseBody},
+    handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
+    response::ResponseBody,
 };
 
 pub struct Server {

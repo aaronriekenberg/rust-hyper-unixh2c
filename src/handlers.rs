@@ -6,17 +6,11 @@ mod static_file;
 mod utils;
 mod version_info;
 
-use bytes::Bytes;
-
 use async_trait::async_trait;
 
 use hyper::http::Response;
 
-use http_body_util::combinators::BoxBody;
-
-use crate::request::HttpRequest;
-
-pub type ResponseBody = BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>;
+use crate::{request::HttpRequest, response::ResponseBody};
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
