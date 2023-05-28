@@ -1,12 +1,10 @@
-use std::{convert::Infallible, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 
 use async_trait::async_trait;
 
-use bytes::Bytes;
-
-use http_body_util::{combinators::BoxBody,BodyExt, Full};
+use http_body_util::{BodyExt, Full};
 
 use hyper::http::{Method, Response, StatusCode};
 
@@ -21,11 +19,9 @@ use tokio::{
 use serde::Serialize;
 
 use crate::{
-    handlers::{
-        route::RouteInfo,
-        utils::{build_json_body_response, build_json_response, build_status_code_response},
-        HttpRequest, RequestHandler,
-    },
+    handlers::route::RouteInfo,
+    handlers::utils::{build_json_body_response, build_json_response, build_status_code_response},
+    handlers::{HttpRequest, RequestHandler, ResponseBody},
     time::current_local_date_time_string,
 };
 
@@ -55,9 +51,9 @@ impl AllCommandsHandler {
 
 #[async_trait]
 impl RequestHandler for AllCommandsHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let json_string = Self::json_string().await.unwrap();
-        build_json_body_response(Full::new(json_string.into()).boxed())
+        build_json_body_response(Full::from(json_string).map_err(|e| e.into()).boxed())
     }
 }
 
@@ -129,7 +125,7 @@ impl RunCommandHandler {
         &self,
         command_result: Result<std::process::Output, std::io::Error>,
         command_duration: Duration,
-    ) -> Response<BoxBody<Bytes, Infallible>> {
+    ) -> Response<ResponseBody> {
         let response = RunCommandResponse {
             now: current_local_date_time_string(),
             command_duration_ms: command_duration.as_millis(),
@@ -155,7 +151,7 @@ impl RunCommandHandler {
 
 #[async_trait]
 impl RequestHandler for RunCommandHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let run_command_permit = match self.run_command_semaphore.acquire().await {
             Err(err) => {
                 warn!("run_command_semaphore.acquire error: {}", err);

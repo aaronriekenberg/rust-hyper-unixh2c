@@ -2,10 +2,6 @@ use anyhow::Context;
 
 use async_trait::async_trait;
 
-use bytes::Bytes;
-
-use http_body_util::combinators::BoxBody;
-
 use hyper::http::{Method, Response};
 
 use tracing::debug;

@@ -29,7 +29,7 @@ pub fn build_json_response(response_dto: impl Serialize) -> Response<ResponseBod
                 .unwrap()
         }
         Ok(json_string) => build_json_body_response(
-            Full::new(json_string.into())
+            Full::from(json_string)
                 .map_err(|never| never.into())
                 .boxed(),
         ),

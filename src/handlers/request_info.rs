@@ -1,16 +1,14 @@
 use async_trait::async_trait;
 
-use bytes::Bytes;
-
-use http_body_util::combinators::BoxBody;
-
 use hyper::http::{Method, Response, Version};
 
 use serde::Serialize;
 
-use std::{collections::BTreeMap, convert::Infallible, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf};
 
-use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler};
+use crate::handlers::{
+    route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
+};
 
 #[derive(Debug, Serialize)]
 struct RequestFields<'a> {
@@ -76,7 +74,7 @@ struct RequestInfoHandler;
 
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         let response: RequestInfoResponse<'_> = request.into();
 
         build_json_response(response)

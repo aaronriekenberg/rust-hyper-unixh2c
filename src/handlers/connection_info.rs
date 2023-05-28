@@ -2,22 +2,20 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 
-use bytes::Bytes;
-
-use http_body_util::combinators::BoxBody;
-
 use hyper::http::{Method, Response};
 
 use serde::Serialize;
 
 use tokio::time::Instant;
 
-use std::{collections::BTreeMap, convert::Infallible, time::Duration};
+use std::{collections::BTreeMap, time::Duration};
 
 use crate::{
     config::ServerProtocol,
     connection::{ConnectionID, ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
-    handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
+    handlers::{
+        route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
+    },
     time::{local_date_time_to_string, LocalDateTime},
 };
 
@@ -103,7 +101,7 @@ impl ServerInfoHandler {
 
 #[async_trait]
 impl RequestHandler for ServerInfoHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
+    async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let connection_tracker_state_dto: ConnectionTrackerStateDTO =
             self.connection_tracker.state().await.into();
 
