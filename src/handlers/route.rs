@@ -13,11 +13,10 @@ use tracing::debug;
 use std::{
     borrow::Cow,
     collections::HashMap,
-    convert::Infallible,
     path::{Path, PathBuf},
 };
 
-use crate::handlers::{HttpRequest, RequestHandler};
+use crate::handlers::{HttpRequest, RequestHandler,ResponseBody};
 
 pub struct RouteInfo {
     pub method: &'static Method,
@@ -102,7 +101,7 @@ impl RequestHandler for Router {
     async fn handle(
         &self,
         request: &HttpRequest,
-    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
+    ) -> Response<ResponseBody> {
         debug!("begin handle");
 
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));

@@ -16,12 +16,11 @@ use http_body_util::combinators::BoxBody;
 
 use crate::request::HttpRequest;
 
+pub type ResponseBody = BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(
-        &self,
-        request: &HttpRequest,
-    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>>;
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody>;
 }
 
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {

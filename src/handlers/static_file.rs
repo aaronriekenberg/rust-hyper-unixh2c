@@ -1,31 +1,20 @@
-use anyhow::Context;
-
 use async_trait::async_trait;
 
-use bytes::Bytes;
+use http_body_util::BodyExt;
 
-use http_body_util::{combinators::BoxBody, BodyExt};
+use hyper::http::Response;
 
-use hyper::{body::Body, http::Response};
-
-use hyper_staticfile::vfs::TokioFileOpener;
 use tracing::info;
 
-use std::{convert::Infallible, io::Error, path::Path};
+use std::path::Path;
 
-use crate::{
-    handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
-    version::get_verison_info,
-};
+use crate::handlers::{HttpRequest, RequestHandler, ResponseBody};
 
 struct StaticFileHandler;
 
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
-    async fn handle(
-        &self,
-        request: &HttpRequest,
-    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         info!("handle_static_file request = {:?}", request);
 
         let root = Path::new("/Users/aaron/aaronr.digital");

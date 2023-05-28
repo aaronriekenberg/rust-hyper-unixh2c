@@ -1,7 +1,3 @@
-use bytes::Bytes;
-
-use http_body_util::combinators::BoxBody;
-
 use hyper::{
     http::{Request, Response},
     server::conn::http1::Builder as HyperHTTP1Builder,
@@ -18,7 +14,7 @@ use std::{convert::Infallible, sync::Arc};
 use crate::{
     config::{ServerConfiguration, ServerProtocol},
     connection::{ConnectionGuard, ConnectionID, ConnectionTracker},
-    handlers::RequestHandler,
+    handlers::{RequestHandler, ResponseBody},
     request::{HttpRequest, RequestID, RequestIDFactory},
 };
 
@@ -45,10 +41,7 @@ impl Server {
         connection_id: ConnectionID,
         request_id: RequestID,
         hyper_request: Request<hyper::body::Incoming>,
-    ) -> Result<
-        Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>>,
-        Infallible,
-    > {
+    ) -> Result<Response<ResponseBody>, Infallible> {
         debug!("begin handle_request");
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
