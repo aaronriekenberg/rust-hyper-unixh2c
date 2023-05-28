@@ -25,7 +25,7 @@ impl RequestHandler for StaticFileHandler {
     async fn handle(
         &self,
         request: &HttpRequest,
-    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send+  Sync  +'static>>> {
+    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
         info!("handle_static_file request = {:?}", request);
 
         let root = Path::new("/Users/aaron/aaronr.digital");

@@ -31,12 +31,12 @@ pub fn build_json_response(
 
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Empty::new().map_err(|never| match never {}).boxed())
+                .body(Empty::new().map_err(|never| never.into()).boxed())
                 .unwrap()
         }
         Ok(json_string) => build_json_body_response(
             Full::new(json_string.into())
-                .map_err(|never| match never {})
+                .map_err(|never| never.into())
                 .boxed(),
         ),
     }
@@ -47,6 +47,6 @@ pub fn build_status_code_response(
 ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
     Response::builder()
         .status(status_code)
-        .body(Empty::new().map_err(|never| match never {}).boxed())
+        .body(Empty::new().map_err(|never| never.into()).boxed())
         .unwrap()
 }

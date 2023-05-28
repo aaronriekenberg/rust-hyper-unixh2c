@@ -14,7 +14,6 @@ use hyper::http::Response;
 
 use http_body_util::combinators::BoxBody;
 
-
 use crate::request::HttpRequest;
 
 #[async_trait]
