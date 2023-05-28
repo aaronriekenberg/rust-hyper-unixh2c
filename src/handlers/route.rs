@@ -16,7 +16,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::handlers::{HttpRequest, RequestHandler,ResponseBody};
+use crate::handlers::{HttpRequest, RequestHandler, ResponseBody};
 
 pub struct RouteInfo {
     pub method: &'static Method,
@@ -98,10 +98,7 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(
-        &self,
-        request: &HttpRequest,
-    ) -> Response<ResponseBody> {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         debug!("begin handle");
 
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));

@@ -1,18 +1,14 @@
-use bytes::Bytes;
-
 use tracing::warn;
 
 use serde::Serialize;
 
 use hyper::http::{header, Response, StatusCode};
 
-use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
+use http_body_util::{BodyExt, Empty, Full};
 
-use std::convert::Infallible;
+use super::ResponseBody;
 
-pub fn build_json_body_response(
-    http_response_body: BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>,
-) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
+pub fn build_json_body_response(http_response_body: ResponseBody) -> Response<ResponseBody> {
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
@@ -20,9 +16,7 @@ pub fn build_json_body_response(
         .unwrap()
 }
 
-pub fn build_json_response(
-    response_dto: impl Serialize,
-) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
+pub fn build_json_response(response_dto: impl Serialize) -> Response<ResponseBody> {
     let json_result = serde_json::to_string(&response_dto);
 
     match json_result {
@@ -31,7 +25,7 @@ pub fn build_json_response(
 
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Empty::new().map_err(|never| never.into()).boxed())
+                .body(empty_response_body())
                 .unwrap()
         }
         Ok(json_string) => build_json_body_response(
@@ -42,11 +36,13 @@ pub fn build_json_response(
     }
 }
 
-pub fn build_status_code_response(
-    status_code: StatusCode,
-) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
+pub fn build_status_code_response(status_code: StatusCode) -> Response<ResponseBody> {
     Response::builder()
         .status(status_code)
-        .body(Empty::new().map_err(|never| never.into()).boxed())
+        .body(empty_response_body())
         .unwrap()
+}
+
+pub fn empty_response_body() -> ResponseBody {
+    Empty::new().map_err(|never| never.into()).boxed()
 }
