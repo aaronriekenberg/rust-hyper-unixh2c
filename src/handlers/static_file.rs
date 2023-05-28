@@ -11,7 +11,7 @@ use hyper::{body::Body, http::Response};
 use hyper_staticfile::vfs::TokioFileOpener;
 use tracing::info;
 
-use std::{convert::Infallible, path::Path};
+use std::{convert::Infallible, io::Error, path::Path};
 
 use crate::{
     handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler},
@@ -22,7 +22,10 @@ struct StaticFileHandler;
 
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, std::io::Error>> {
+    async fn handle(
+        &self,
+        request: &HttpRequest,
+    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send+  Sync  +'static>>> {
         info!("handle_static_file request = {:?}", request);
 
         let root = Path::new("/Users/aaron/aaronr.digital");
@@ -41,7 +44,11 @@ impl RequestHandler for StaticFileHandler {
             .build(resolve_result)
             .unwrap();
 
-        response.map(|b| b.boxed())
+        let (parts, body) = response.into_parts();
+
+        let boxed_body = body.map_err(|e| e.into()).boxed();
+
+        Response::from_parts(parts, boxed_body)
     }
 }
 

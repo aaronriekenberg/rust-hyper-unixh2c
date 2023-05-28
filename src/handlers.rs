@@ -14,13 +14,15 @@ use hyper::http::Response;
 
 use http_body_util::combinators::BoxBody;
 
-use std::convert::Infallible;
 
 use crate::request::HttpRequest;
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, std::io::Error>>;
+    async fn handle(
+        &self,
+        request: &HttpRequest,
+    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>>;
 }
 
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {

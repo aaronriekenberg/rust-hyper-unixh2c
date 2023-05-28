@@ -11,8 +11,8 @@ use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
 use std::convert::Infallible;
 
 pub fn build_json_body_response(
-    http_response_body: BoxBody<Bytes, std::io::Error>,
-) -> Response<BoxBody<Bytes, std::io::Error>> {
+    http_response_body: BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>,
+) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
@@ -22,7 +22,7 @@ pub fn build_json_body_response(
 
 pub fn build_json_response(
     response_dto: impl Serialize,
-) -> Response<BoxBody<Bytes, std::io::Error>> {
+) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
     let json_result = serde_json::to_string(&response_dto);
 
     match json_result {
@@ -44,7 +44,7 @@ pub fn build_json_response(
 
 pub fn build_status_code_response(
     status_code: StatusCode,
-) -> Response<BoxBody<Bytes, std::io::Error>> {
+) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
     Response::builder()
         .status(status_code)
         .body(Empty::new().map_err(|never| match never {}).boxed())

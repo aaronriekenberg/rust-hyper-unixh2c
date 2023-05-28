@@ -45,7 +45,10 @@ impl Server {
         connection_id: ConnectionID,
         request_id: RequestID,
         hyper_request: Request<hyper::body::Incoming>,
-    ) -> Result<Response<BoxBody<Bytes, std::io::Error>>, Infallible> {
+    ) -> Result<
+        Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>>,
+        Infallible,
+    > {
         debug!("begin handle_request");
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);

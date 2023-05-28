@@ -17,7 +17,10 @@ struct VersionInfoHandler;
 
 #[async_trait]
 impl RequestHandler for VersionInfoHandler {
-    async fn handle(&self, _request: &HttpRequest) -> Response<BoxBody<Bytes, std::io::Error>> {
+    async fn handle(
+        &self,
+        _request: &HttpRequest,
+    ) -> Response<BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>> {
         let version_info = get_verison_info().await;
 
         build_json_response(version_info)
