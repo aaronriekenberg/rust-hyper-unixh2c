@@ -99,7 +99,7 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, Infallible>> {
+    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, std::io::Error>> {
         debug!("begin handle");
 
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));

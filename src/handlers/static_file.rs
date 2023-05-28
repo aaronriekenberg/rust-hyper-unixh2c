@@ -22,16 +22,7 @@ struct StaticFileHandler;
 
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
-    async fn handle(
-        &self,
-        request: &HttpRequest,
-    ) -> Response<
-        BoxBody<
-            dyn hyper::body::Body<Data = TokioFileOpener::File,Error=Infallible>,
-            Error = Infallible,
-        >,
-        Infallible,
-    > {
+    async fn handle(&self, request: &HttpRequest) -> Response<BoxBody<Bytes, std::io::Error>> {
         info!("handle_static_file request = {:?}", request);
 
         let root = Path::new("/Users/aaron/aaronr.digital");
@@ -50,7 +41,7 @@ impl RequestHandler for StaticFileHandler {
             .build(resolve_result)
             .unwrap();
 
-        response
+        response.map(|b| b.boxed())
     }
 }
 
