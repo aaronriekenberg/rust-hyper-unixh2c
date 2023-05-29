@@ -6,7 +6,7 @@ use hyper::http::{Response, StatusCode};
 
 use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
 use std::{path::Path, time::SystemTime};
 
@@ -38,9 +38,9 @@ impl StaticFileHandler {
         if let ResolveResult::Found(resolved_file) = resolve_result {
             let str_path = resolved_file.path.to_str().unwrap_or_default();
 
-            info!("str_path = {}", str_path);
+            debug!("str_path = {}", str_path);
             if str_path.starts_with('.') || str_path.contains("/.") {
-                info!(
+                debug!(
                     "blocking request for . file path = {:?}",
                     resolved_file.path
                 );
@@ -56,12 +56,12 @@ impl StaticFileHandler {
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
         match resolve_result {
             ResolveResult::Found(resolved_file) => {
-                info!("resolved_file.path = {:?}", resolved_file.path,);
+                debug!("resolved_file.path = {:?}", resolved_file.path,);
 
                 let str_path = resolved_file.path.to_str().unwrap_or_default();
 
                 if str_path.contains("vnstat/") && str_path.ends_with(".png") {
-                    info!("request for vnstat png file path");
+                    debug!("request for vnstat png file path");
 
                     match resolved_file.modified {
                         None => Some(0),
@@ -73,7 +73,7 @@ impl StaticFileHandler {
                             let cache_duration =
                                 file_expiration.duration_since(now).unwrap_or_default();
 
-                            info!(
+                            debug!(
                                 "file_expiration = {:?} cache_duration = {:?}",
                                 file_expiration, cache_duration
                             );
@@ -93,7 +93,7 @@ impl StaticFileHandler {
 #[async_trait]
 impl RequestHandler for StaticFileHandler {
     async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
-        info!("handle_static_file request = {:?}", request);
+        debug!("handle_static_file request = {:?}", request);
 
         let resolve_result = match self.resolver.resolve_request(request.hyper_request()).await {
             Ok(resolve_result) => resolve_result,
@@ -106,7 +106,7 @@ impl RequestHandler for StaticFileHandler {
             }
         };
 
-        info!("resolve_result = {:?}", resolve_result);
+        debug!("resolve_result = {:?}", resolve_result);
 
         if let Some(response) = self.block_dot_paths(&resolve_result) {
             return response;
@@ -114,7 +114,7 @@ impl RequestHandler for StaticFileHandler {
 
         let cache_headers = self.build_cache_headers(&resolve_result);
 
-        info!("cache_headers = {:?}", cache_headers);
+        debug!("cache_headers = {:?}", cache_headers);
 
         let response = match hyper_staticfile::ResponseBuilder::new()
             .request(request.hyper_request())
