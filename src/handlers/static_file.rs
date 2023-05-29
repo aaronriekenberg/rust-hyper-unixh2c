@@ -17,7 +17,7 @@ use crate::{
     response::CacheControl,
 };
 
-const ONE_HOUR_IN_SECONDS: u32 = 3600;
+const ONE_DAY_IN_SECONDS: u32 = 24 * 3600;
 const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
 
 struct StaticFileHandler {
@@ -82,7 +82,7 @@ impl StaticFileHandler {
                         }
                     }
                 } else {
-                    Some(24 * ONE_HOUR_IN_SECONDS)
+                    Some(ONE_DAY_IN_SECONDS)
                 }
             }
             _ => None,
