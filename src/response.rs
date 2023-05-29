@@ -5,17 +5,16 @@ use http_body_util::combinators::BoxBody;
 #[derive(Clone, Copy, Debug)]
 pub enum CacheControl {
     NoCache,
-
-    Cache { max_age_seconds: u32 },
+    // Cache { max_age_seconds: u32 },
 }
 
 impl CacheControl {
     pub fn header_value(&self) -> String {
         match self {
             CacheControl::NoCache => "public, no-cache".to_owned(),
-            CacheControl::Cache { max_age_seconds } => {
-                format!("public, max-age={}", max_age_seconds)
-            }
+            // CacheControl::Cache { max_age_seconds } => {
+            //     format!("public, max-age={}", max_age_seconds)
+            // }
         }
     }
 }

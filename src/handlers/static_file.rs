@@ -46,9 +46,7 @@ impl StaticFileHandler {
                 );
                 return Some(build_status_code_response(
                     StatusCode::FORBIDDEN,
-                    CacheControl::Cache {
-                        max_age_seconds: ONE_HOUR_IN_SECONDS,
-                    },
+                    CacheControl::NoCache,
                 ));
             }
         }
@@ -57,10 +55,6 @@ impl StaticFileHandler {
 
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
         match resolve_result {
-            ResolveResult::MethodNotMatched => Some(ONE_HOUR_IN_SECONDS),
-            ResolveResult::NotFound => Some(ONE_HOUR_IN_SECONDS),
-            ResolveResult::PermissionDenied => Some(ONE_HOUR_IN_SECONDS),
-            ResolveResult::IsDirectory { redirect_to: _ } => Some(24 * ONE_HOUR_IN_SECONDS),
             ResolveResult::Found(resolved_file) => {
                 info!("resolved_file.path = {:?}", resolved_file.path,);
 
@@ -91,6 +85,7 @@ impl StaticFileHandler {
                     Some(24 * ONE_HOUR_IN_SECONDS)
                 }
             }
+            _ => None,
         }
     }
 }
@@ -118,6 +113,8 @@ impl RequestHandler for StaticFileHandler {
         }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
+
+        info!("cache_headers = {:?}", cache_headers);
 
         let response = match hyper_staticfile::ResponseBuilder::new()
             .request(request.hyper_request())
