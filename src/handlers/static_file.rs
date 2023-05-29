@@ -70,7 +70,7 @@ impl StaticFileHandler {
                     info!("request for vnstat png file path");
 
                     match resolved_file.modified {
-                        None => None,
+                        None => Some(0),
                         Some(modified) => {
                             let now = SystemTime::now();
 
