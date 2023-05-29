@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters};
 
-use hyper::{http::Request, Body};
+use hyper::{body::Incoming, http::Request};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -24,14 +24,14 @@ pub struct HttpRequest {
     request_id: RequestID,
 
     #[getset(get = "pub")]
-    hyper_request: Request<Body>,
+    hyper_request: Request<Incoming>,
 }
 
 impl HttpRequest {
     pub fn new(
         connection_id: ConnectionID,
         request_id: RequestID,
-        hyper_request: Request<Body>,
+        hyper_request: Request<Incoming>,
     ) -> Self {
         Self {
             connection_id,

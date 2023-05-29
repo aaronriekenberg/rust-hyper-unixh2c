@@ -9,10 +9,13 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 async-trait = "0.1"
+bytes = "1"
 chrono = "0.4"
 getset = "0.1"
 humantime-serde = "1"
-hyper = { version = "0.14", features = ["full", "deprecated", "backports"] }
+http-body-util = "0.1.0-rc.2"
+hyper = { version = "1.0.0-rc.3", features = ["full"] }
+hyper-staticfile = { git = "https://github.com/stephank/hyper-staticfile.git" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

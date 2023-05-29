@@ -2,18 +2,19 @@ mod commands;
 mod connection_info;
 mod request_info;
 mod route;
+mod static_file;
 mod utils;
 mod version_info;
 
 use async_trait::async_trait;
 
-use hyper::{http::Response, Body};
+use hyper::http::Response;
 
-use crate::request::HttpRequest;
+use crate::{request::HttpRequest, response::ResponseBody};
 
 #[async_trait]
 pub trait RequestHandler: Send + Sync {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body>;
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody>;
 }
 
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
@@ -27,5 +28,7 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     routes.append(&mut version_info::create_routes().await);
 
-    Ok(Box::new(route::Router::new(routes)?))
+    let default_route = static_file::create_default_route().await;
+
+    Ok(Box::new(route::Router::new(routes, default_route)?))
 }

@@ -1,18 +1,18 @@
+use anyhow::Context;
+
+use async_trait::async_trait;
+
+use hyper::http::{Method, Response};
+
+use tracing::debug;
+
 use std::{
     borrow::Cow,
     collections::HashMap,
     path::{Path, PathBuf},
 };
 
-use anyhow::Context;
-
-use async_trait::async_trait;
-
-use hyper::{http::Method, Body, Response};
-
-use tracing::debug;
-
-use crate::handlers::{utils::build_status_code_response, HttpRequest, RequestHandler};
+use crate::handlers::{HttpRequest, RequestHandler, ResponseBody};
 
 pub struct RouteInfo {
     pub method: &'static Method,
@@ -37,12 +37,17 @@ impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
 
 pub struct Router {
     route_key_to_handler: HashMap<RouteKey<'static>, Box<dyn RequestHandler>>,
+    default_route: Box<dyn RequestHandler>,
 }
 
 impl Router {
-    pub fn new(routes: Vec<RouteInfo>) -> anyhow::Result<Self> {
+    pub fn new(
+        routes: Vec<RouteInfo>,
+        default_route: Box<dyn RequestHandler>,
+    ) -> anyhow::Result<Self> {
         let mut router = Self {
             route_key_to_handler: HashMap::with_capacity(routes.len()),
+            default_route,
         };
 
         let context_path = Path::new(crate::config::instance().context_configuration().context());
@@ -89,14 +94,14 @@ impl Router {
 
 #[async_trait]
 impl RequestHandler for Router {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         debug!("begin handle");
 
         let handler_option = self.route_key_to_handler.get(&RouteKey::from(request));
 
         let response = match handler_option {
-            None => build_status_code_response(hyper::http::StatusCode::NOT_FOUND),
             Some(handler) => handler.handle(request).await,
+            None => self.default_route.handle(request).await,
         };
 
         debug!("end handle");

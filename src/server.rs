@@ -3,7 +3,6 @@ use hyper::{
     server::conn::http1::Builder as HyperHTTP1Builder,
     server::conn::http2::Builder as HyperHTTP2Builder,
     service::service_fn,
-    Body,
 };
 
 use tracing::{debug, info, instrument, warn, Instrument};
@@ -17,6 +16,7 @@ use crate::{
     connection::{ConnectionGuard, ConnectionID, ConnectionTracker},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
+    response::ResponseBody,
 };
 
 pub struct Server {
@@ -41,8 +41,8 @@ impl Server {
         self: Arc<Self>,
         connection_id: ConnectionID,
         request_id: RequestID,
-        hyper_request: Request<Body>,
-    ) -> Result<Response<Body>, Infallible> {
+        hyper_request: Request<hyper::body::Incoming>,
+    ) -> Result<Response<ResponseBody>, Infallible> {
         debug!("begin handle_request");
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);

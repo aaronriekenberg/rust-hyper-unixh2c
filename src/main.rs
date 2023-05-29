@@ -5,6 +5,7 @@ mod config;
 mod connection;
 mod handlers;
 mod request;
+mod response;
 mod server;
 mod time;
 mod version;

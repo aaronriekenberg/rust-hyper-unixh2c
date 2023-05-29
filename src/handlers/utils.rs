@@ -2,17 +2,30 @@ use tracing::warn;
 
 use serde::Serialize;
 
-use hyper::{header, http::StatusCode, Body, Response};
+use hyper::http::{header, Response, StatusCode};
 
-pub fn build_json_body_response(http_response_body: Body) -> Response<hyper::Body> {
+use http_body_util::{BodyExt, Empty, Full};
+
+use crate::response::CacheControl;
+
+use super::ResponseBody;
+
+pub fn build_json_body_response(
+    http_response_body: ResponseBody,
+    cache_control: CacheControl,
+) -> Response<ResponseBody> {
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
+        .header(header::CACHE_CONTROL, cache_control.header_value())
         .body(http_response_body)
         .unwrap()
 }
 
-pub fn build_json_response(response_dto: impl Serialize) -> Response<Body> {
+pub fn build_json_response(
+    response_dto: impl Serialize,
+    cache_control: CacheControl,
+) -> Response<ResponseBody> {
     let json_result = serde_json::to_string(&response_dto);
 
     match json_result {
@@ -21,16 +34,30 @@ pub fn build_json_response(response_dto: impl Serialize) -> Response<Body> {
 
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::empty())
+                .header(header::CACHE_CONTROL, CacheControl::NoCache.header_value())
+                .body(empty_response_body())
                 .unwrap()
         }
-        Ok(json_string) => build_json_body_response(Body::from(json_string)),
+        Ok(json_string) => build_json_body_response(
+            Full::from(json_string)
+                .map_err(|never| never.into())
+                .boxed(),
+            cache_control,
+        ),
     }
 }
 
-pub fn build_status_code_response(status_code: StatusCode) -> Response<Body> {
+pub fn build_status_code_response(
+    status_code: StatusCode,
+    cache_control: CacheControl,
+) -> Response<ResponseBody> {
     Response::builder()
         .status(status_code)
-        .body(Body::empty())
+        .header(header::CACHE_CONTROL, cache_control.header_value())
+        .body(empty_response_body())
         .unwrap()
+}
+
+pub fn empty_response_body() -> ResponseBody {
+    Empty::new().map_err(|never| never.into()).boxed()
 }

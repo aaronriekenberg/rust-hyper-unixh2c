@@ -1,12 +1,17 @@
-use std::{collections::BTreeMap, path::PathBuf};
-
 use async_trait::async_trait;
 
-use hyper::{http::Method, http::Version, Body, Response};
+use hyper::http::{Method, Response, Version};
 
 use serde::Serialize;
 
-use crate::handlers::{route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler};
+use std::{collections::BTreeMap, path::PathBuf};
+
+use crate::{
+    handlers::{
+        route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
+    },
+    response::CacheControl,
+};
 
 #[derive(Debug, Serialize)]
 struct RequestFields<'a> {
@@ -72,10 +77,10 @@ struct RequestInfoHandler;
 
 #[async_trait]
 impl RequestHandler for RequestInfoHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<Body> {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
         let response: RequestInfoResponse<'_> = request.into();
 
-        build_json_response(response)
+        build_json_response(response, CacheControl::NoCache)
     }
 }
 
