@@ -15,6 +15,8 @@ use crate::{
     response::CacheControl,
 };
 
+const ONE_HOUR_IN_SECONDS: u32 = 3600;
+
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
 }
@@ -31,10 +33,10 @@ impl StaticFileHandler {
 
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
         match resolve_result {
-            ResolveResult::MethodNotMatched => Some(3600),
-            ResolveResult::NotFound => Some(3600),
-            ResolveResult::PermissionDenied => Some(3600),
-            ResolveResult::IsDirectory { redirect_to: _ } => Some(3600 * 24),
+            ResolveResult::MethodNotMatched => Some(ONE_HOUR_IN_SECONDS),
+            ResolveResult::NotFound => Some(ONE_HOUR_IN_SECONDS),
+            ResolveResult::PermissionDenied => Some(ONE_HOUR_IN_SECONDS),
+            ResolveResult::IsDirectory { redirect_to: _ } => Some(24 * ONE_HOUR_IN_SECONDS),
             ResolveResult::Found(resolved_file) => {
                 info!("resolved_file.path = {:?}", resolved_file.path,);
                 None
@@ -60,6 +62,24 @@ impl RequestHandler for StaticFileHandler {
         };
 
         info!("resolve_result = {:?}", resolve_result);
+
+        if let ResolveResult::Found(resolved_file) = &resolve_result {
+            let str_path = resolved_file.path.to_str().unwrap_or_default();
+
+            info!("str_path = {}", str_path);
+            if str_path.starts_with('.') || str_path.contains("/.") {
+                info!(
+                    "blocking request for . file path = {:?}",
+                    resolved_file.path
+                );
+                return build_status_code_response(
+                    StatusCode::FORBIDDEN,
+                    CacheControl::Cache {
+                        max_age_seconds: ONE_HOUR_IN_SECONDS,
+                    },
+                );
+            }
+        }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
 
