@@ -105,5 +105,8 @@
                 "command": "/usr/bin/w"
             }
         ]
+    },
+    "static_file_configuration": {
+        "path": "/var/www/html/aaronr.digital"
     }
 }
