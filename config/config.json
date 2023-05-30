@@ -4,7 +4,7 @@
     },
     "server_configuration": {
         "server_protocol": "HTTP1",
-        "bind_address": "/var/www/run/cgi/socket"
+        "bind_address": "/home/aaron/rust-hyper-unixh2c"
     },
     "command_configuration": {
         "max_concurrent_commands": 10,
@@ -107,6 +107,6 @@
         ]
     },
     "static_file_configuration": {
-        "path": "/var/www/html/aaronr.digital"
+        "path": "/home/aaron/aaronr.digital"
     }
 }
