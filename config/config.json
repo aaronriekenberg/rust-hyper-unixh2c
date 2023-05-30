@@ -4,7 +4,7 @@
     },
     "server_configuration": {
         "server_protocol": "HTTP1",
-        "bind_address": "/home/aaron/rust-hyper-unixh2c"
+        "bind_address": "/home/aaron/rust-hyper-unixh2c/socket"
     },
     "command_configuration": {
         "max_concurrent_commands": 10,
