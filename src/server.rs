@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 use hyper::{
     http::{Request, Response},
     server::conn::http1::Builder as HyperHTTP1Builder,
@@ -7,32 +9,32 @@ use hyper::{
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
-use tokio::net::{UnixListener, UnixStream};
+use tokio::{
+    io::{AsyncRead, AsyncWrite},
+    net::{TcpListener, UnixListener},
+    task::JoinSet,
+};
 
 use std::{convert::Infallible, sync::Arc};
 
 use crate::{
-    config::{ServerConfiguration, ServerProtocol},
+    config::{ServerProtocol, ServerSocketType},
     connection::{ConnectionGuard, ConnectionID, ConnectionTracker},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
 };
 
-pub struct Server {
+struct ConnectionHandler {
     handlers: Box<dyn RequestHandler>,
-    connection_tracker: &'static ConnectionTracker,
     request_id_factory: RequestIDFactory,
-    server_configuration: &'static ServerConfiguration,
 }
 
-impl Server {
-    pub async fn new(handlers: Box<dyn RequestHandler>) -> Arc<Self> {
+impl ConnectionHandler {
+    fn new(handlers: Box<dyn RequestHandler>, request_id_factory: RequestIDFactory) -> Arc<Self> {
         Arc::new(Self {
             handlers,
-            connection_tracker: ConnectionTracker::instance().await,
-            request_id_factory: RequestIDFactory::new(),
-            server_configuration: crate::config::instance().server_configuration(),
+            request_id_factory,
         })
     }
 
@@ -54,10 +56,11 @@ impl Server {
     }
 
     #[instrument(skip_all, fields(conn_id = connection.id().as_usize()))]
-    async fn handle_connection(
+    async fn handle_connection<I: AsyncRead + AsyncWrite + Unpin + 'static>(
         self: Arc<Self>,
-        unix_stream: UnixStream,
+        stream: I,
         connection: ConnectionGuard,
+        server_protocol: ServerProtocol,
     ) {
         info!("begin handle_connection");
 
@@ -71,31 +74,49 @@ impl Server {
                 .in_current_span()
         });
 
-        if let Err(http_err) = match self.server_configuration.server_protocol() {
+        if let Err(http_err) = match server_protocol {
             ServerProtocol::HTTP1 => {
                 debug!("serving HTTP1 connection");
                 HyperHTTP1Builder::new()
-                    .serve_connection(unix_stream, service)
+                    .serve_connection(stream, service)
                     .await
             }
             ServerProtocol::HTTP2 => {
                 debug!("serving HTTP2 connection");
                 HyperHTTP2Builder::new(TokioExecutor)
-                    .serve_connection(unix_stream, service)
+                    .serve_connection(stream, service)
                     .await
             }
         } {
             warn!(
                 "Error while serving {:?} connection: {:?}",
-                self.server_configuration.server_protocol(),
-                http_err,
+                server_protocol, http_err,
             );
         }
 
         info!("end handle_connection");
     }
+}
 
-    pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
+struct UnixServer {
+    connection_handler: Arc<ConnectionHandler>,
+    connection_tracker: &'static ConnectionTracker,
+    server_configuration: &'static crate::config::ServerConfiguration,
+}
+
+impl UnixServer {
+    async fn new(
+        connection_handler: Arc<ConnectionHandler>,
+        server_configuration: &'static crate::config::ServerConfiguration,
+    ) -> Self {
+        Self {
+            connection_handler,
+            connection_tracker: ConnectionTracker::instance().await,
+            server_configuration,
+        }
+    }
+
+    async fn run(self) -> anyhow::Result<()> {
         let path = self.server_configuration.bind_address();
 
         // do not fail on remove error, the path may not exist.
@@ -105,18 +126,121 @@ impl Server {
         let unix_listener = UnixListener::bind(path)?;
 
         let local_addr = unix_listener.local_addr()?;
-        info!("listening on {:?}", local_addr);
+        info!("listening on unix {:?}", local_addr);
 
         loop {
             let (unix_stream, _remote_addr) = unix_listener.accept().await?;
 
             let connection = self
                 .connection_tracker
-                .add_connection(*self.server_configuration.server_protocol())
+                .add_connection(
+                    *self.server_configuration.server_protocol(),
+                    ServerSocketType::UNIX,
+                )
                 .await;
 
-            tokio::task::spawn(Arc::clone(&self).handle_connection(unix_stream, connection));
+            tokio::task::spawn(Arc::clone(&self.connection_handler).handle_connection(
+                unix_stream,
+                connection,
+                *self.server_configuration.server_protocol(),
+            ));
         }
+    }
+}
+
+struct TCPServer {
+    connection_handler: Arc<ConnectionHandler>,
+    connection_tracker: &'static ConnectionTracker,
+    server_configuration: &'static crate::config::ServerConfiguration,
+}
+
+impl TCPServer {
+    async fn new(
+        connection_handler: Arc<ConnectionHandler>,
+        server_configuration: &'static crate::config::ServerConfiguration,
+    ) -> Self {
+        Self {
+            connection_handler,
+            connection_tracker: ConnectionTracker::instance().await,
+            server_configuration,
+        }
+    }
+
+    async fn run(self) -> anyhow::Result<()> {
+        let path = self.server_configuration.bind_address();
+
+        let tcp_listener = TcpListener::bind(path).await?;
+
+        let local_addr = tcp_listener.local_addr()?;
+        info!("listening on tcp {:?}", local_addr);
+
+        loop {
+            let (tcp_stream, _remote_addr) = tcp_listener.accept().await?;
+
+            let connection = self
+                .connection_tracker
+                .add_connection(
+                    *self.server_configuration.server_protocol(),
+                    ServerSocketType::TCP,
+                )
+                .await;
+
+            tokio::task::spawn(Arc::clone(&self.connection_handler).handle_connection(
+                tcp_stream,
+                connection,
+                *self.server_configuration.server_protocol(),
+            ));
+        }
+    }
+}
+
+pub struct Server {
+    join_set: JoinSet<anyhow::Result<()>>,
+}
+
+impl Server {
+    pub async fn new(handlers: Box<dyn RequestHandler>) -> Self {
+        let request_id_factory = RequestIDFactory::new();
+        let connection_handler = ConnectionHandler::new(handlers, request_id_factory);
+
+        let mut join_set = JoinSet::new();
+
+        let configuration = crate::config::instance();
+
+        for server_configuration in configuration.server_configurations() {
+            let connection_handler_clone = Arc::clone(&connection_handler);
+            join_set.spawn(async move {
+                match server_configuration.server_socket_type() {
+                    ServerSocketType::TCP => {
+                        let server =
+                            TCPServer::new(connection_handler_clone, server_configuration).await;
+                        server.run().await.context("TCP server run error")?;
+                    }
+                    ServerSocketType::UNIX => {
+                        let server =
+                            UnixServer::new(connection_handler_clone, server_configuration).await;
+                        server.run().await.context("UNIX server run error")?;
+                    }
+                };
+                Ok(())
+            });
+        }
+
+        Self { join_set }
+    }
+
+    pub async fn run(mut self) -> anyhow::Result<()> {
+        let result = self
+            .join_set
+            .join_next()
+            .await
+            .context("join_set.join_next returned None")?;
+
+        let result = result.context("join_next JoinError")?;
+
+        result.context("server.run returned error")?;
+
+        anyhow::bail!("join_set.join_next returned without error");
     }
 }
 

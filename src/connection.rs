@@ -15,7 +15,7 @@ use std::{
     time::SystemTime,
 };
 
-use crate::config::ServerProtocol;
+use crate::config::{ServerProtocol, ServerSocketType};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ConnectionID(usize);
@@ -33,17 +33,23 @@ pub struct ConnectionInfo {
     creation_time: SystemTime,
     creation_instant: Instant,
     server_protocol: ServerProtocol,
+    server_socket_type: ServerSocketType,
     #[getset(skip)]
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionInfo {
-    fn new(id: ConnectionID, server_protocol: ServerProtocol) -> Self {
+    fn new(
+        id: ConnectionID,
+        server_protocol: ServerProtocol,
+        server_socket_type: ServerSocketType,
+    ) -> Self {
         Self {
             id,
             creation_time: SystemTime::now(),
             creation_instant: Instant::now(),
             server_protocol,
+            server_socket_type,
             num_requests: Arc::new(AtomicUsize::new(0)),
         }
     }
@@ -100,10 +106,14 @@ impl ConnectionTracker {
         }
     }
 
-    pub async fn add_connection(&self, server_protocol: ServerProtocol) -> ConnectionGuard {
+    pub async fn add_connection(
+        &self,
+        server_protocol: ServerProtocol,
+        server_socket_type: ServerSocketType,
+    ) -> ConnectionGuard {
         let mut state = self.state.write().await;
 
-        state.add_connection(server_protocol)
+        state.add_connection(server_protocol, server_socket_type)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {

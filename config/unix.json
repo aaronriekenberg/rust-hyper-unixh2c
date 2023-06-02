@@ -2,10 +2,18 @@
     "context_configuration": {
         "context": "/cgi-bin"
     },
-    "server_configuration": {
-        "server_protocol": "HTTP2",
-        "bind_address": "./socket"
-    },
+    "server_configurations": [
+        {
+            "server_protocol": "HTTP2",
+            "server_socket_type": "UNIX",
+            "bind_address": "./socket"
+        },
+        {
+            "server_protocol": "HTTP1",
+            "server_socket_type": "TCP",
+            "bind_address": "[::]:8080"
+        }
+    ],
     "command_configuration": {
         "max_concurrent_commands": 1,
         "semaphore_acquire_timeout": "200ms",

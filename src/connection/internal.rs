@@ -4,7 +4,7 @@ use tracing::debug;
 
 use std::{cmp, collections::HashMap, sync::Arc};
 
-use crate::config::ServerProtocol;
+use crate::config::{ServerProtocol, ServerSocketType};
 
 use super::{ConnectionGuard, ConnectionID, ConnectionInfo};
 
@@ -54,10 +54,15 @@ impl ConnectionTrackerState {
         ConnectionID(connection_id)
     }
 
-    pub fn add_connection(&mut self, server_protocol: ServerProtocol) -> ConnectionGuard {
+    pub fn add_connection(
+        &mut self,
+        server_protocol: ServerProtocol,
+        server_socket_type: ServerSocketType,
+    ) -> ConnectionGuard {
         let connection_id = self.next_connection_id();
 
-        let connection_info = ConnectionInfo::new(connection_id, server_protocol);
+        let connection_info =
+            ConnectionInfo::new(connection_id, server_protocol, server_socket_type);
 
         let num_requests = Arc::clone(&connection_info.num_requests);
 

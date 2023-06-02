@@ -21,10 +21,18 @@ pub enum ServerProtocol {
     HTTP2,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum ServerSocketType {
+    TCP,
+
+    UNIX,
+}
+
 #[derive(Debug, Deserialize, Serialize, Getters)]
 #[getset(get = "pub")]
 pub struct ServerConfiguration {
     server_protocol: ServerProtocol,
+    server_socket_type: ServerSocketType,
     bind_address: String,
 }
 
@@ -57,7 +65,7 @@ pub struct StaticFileConfiguration {
 #[getset(get = "pub")]
 pub struct Configuration {
     context_configuration: ContextConfiguration,
-    server_configuration: ServerConfiguration,
+    server_configurations: Vec<ServerConfiguration>,
     command_configuration: CommandConfiguration,
     static_file_configuration: StaticFileConfiguration,
 }

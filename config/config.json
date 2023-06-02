@@ -2,10 +2,18 @@
     "context_configuration": {
         "context": "/cgi-bin"
     },
-    "server_configuration": {
-        "server_protocol": "HTTP1",
-        "bind_address": "/home/aaron/rust-hyper-unixh2c/socket"
-    },
+    "server_configuration": [
+        {
+            "server_protocol": "HTTP1",
+            "server_socket_type": "UNIX",
+            "bind_address": "/home/aaron/rust-hyper-unixh2c/socket"
+        },
+        {
+            "server_protocol": "HTTP1",
+            "server_socket_type": "TCP",
+            "bind_address": "[::]:8080"
+        }
+    ],
     "command_configuration": {
         "max_concurrent_commands": 10,
         "semaphore_acquire_timeout": "200ms",
