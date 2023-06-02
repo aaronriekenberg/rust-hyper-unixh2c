@@ -177,6 +177,11 @@ impl TCPServer {
         loop {
             let (tcp_stream, _remote_addr) = tcp_listener.accept().await?;
 
+            if let Err(e) = tcp_stream.set_nodelay(true) {
+                warn!("error setting tcp no delay {}", e);
+                continue;
+            };
+
             let connection = self
                 .connection_tracker
                 .add_connection(
