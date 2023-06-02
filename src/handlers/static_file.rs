@@ -35,21 +35,23 @@ impl StaticFileHandler {
     }
 
     fn block_dot_paths(&self, resolve_result: &ResolveResult) -> Option<Response<ResponseBody>> {
-        if let ResolveResult::Found(resolved_file) = resolve_result {
-            let str_path = resolved_file.path.to_str().unwrap_or_default();
+        let str_path_option = match resolve_result {
+            ResolveResult::Found(resolved_file) => resolved_file.path.to_str(),
+            ResolveResult::IsDirectory { redirect_to } => Some(redirect_to.as_str()),
+            _ => None,
+        };
 
+        if let Some(str_path) = str_path_option {
             debug!("str_path = {}", str_path);
             if str_path.starts_with('.') || str_path.contains("/.") {
-                debug!(
-                    "blocking request for . file path = {:?}",
-                    resolved_file.path
-                );
+                warn!("blocking request for dot file path = {:?}", str_path);
                 return Some(build_status_code_response(
                     StatusCode::FORBIDDEN,
                     CacheControl::NoCache,
                 ));
             }
-        }
+        };
+
         None
     }
 
