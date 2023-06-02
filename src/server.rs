@@ -75,13 +75,13 @@ impl ConnectionHandler {
         });
 
         if let Err(http_err) = match server_protocol {
-            ServerProtocol::HTTP1 => {
+            ServerProtocol::Http1 => {
                 debug!("serving HTTP1 connection");
                 HyperHTTP1Builder::new()
                     .serve_connection(stream, service)
                     .await
             }
-            ServerProtocol::HTTP2 => {
+            ServerProtocol::Http2 => {
                 debug!("serving HTTP2 connection");
                 HyperHTTP2Builder::new(TokioExecutor)
                     .serve_connection(stream, service)
@@ -135,7 +135,7 @@ impl UnixServer {
                 .connection_tracker
                 .add_connection(
                     *self.server_configuration.server_protocol(),
-                    ServerSocketType::UNIX,
+                    ServerSocketType::Unix,
                 )
                 .await;
 
@@ -186,7 +186,7 @@ impl TCPServer {
                 .connection_tracker
                 .add_connection(
                     *self.server_configuration.server_protocol(),
-                    ServerSocketType::TCP,
+                    ServerSocketType::Tcp,
                 )
                 .await;
 
@@ -216,12 +216,12 @@ impl Server {
             let connection_handler_clone = Arc::clone(&connection_handler);
             join_set.spawn(async move {
                 match server_configuration.server_socket_type() {
-                    ServerSocketType::TCP => {
+                    ServerSocketType::Tcp => {
                         let server =
                             TCPServer::new(connection_handler_clone, server_configuration).await;
                         server.run().await.context("TCP server run error")?;
                     }
-                    ServerSocketType::UNIX => {
+                    ServerSocketType::Unix => {
                         let server =
                             UnixServer::new(connection_handler_clone, server_configuration).await;
                         server.run().await.context("UNIX server run error")?;

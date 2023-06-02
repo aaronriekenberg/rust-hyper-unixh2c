@@ -16,16 +16,20 @@ pub struct ContextConfiguration {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum ServerProtocol {
-    HTTP1,
+    #[serde(rename = "HTTP1")]
+    Http1,
 
-    HTTP2,
+    #[serde(rename = "HTTP2")]
+    Http2,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum ServerSocketType {
-    TCP,
+    #[serde(rename = "TCP")]
+    Tcp,
 
-    UNIX,
+    #[serde(rename = "UNIX")]
+    Unix,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
