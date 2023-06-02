@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 
-systemctl --user stop rust-hyper-unixh2c.service
+systemctl --user stop rust-hyper-server.service
 
 DONE=false
 
@@ -9,7 +9,7 @@ while [ $DONE = "false" ] ; do
 
   echo "begin loop $(date)"
 
-  cd ~/rust-hyper-unixh2c
+  cd ~/rust-hyper-server
 
   git pull -v
 
@@ -20,7 +20,7 @@ while [ $DONE = "false" ] ; do
   mkdir -p target/release
   cd target/release
 
-  URL="https://github.com/aaronriekenberg/rust-hyper-unixh2c/releases/download/${RELEASE}/rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz"
+  URL="https://github.com/aaronriekenberg/rust-hyper-server/releases/download/${RELEASE}/rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz"
 
   wget $URL
   WGET_RESULT=$?
@@ -34,6 +34,6 @@ while [ $DONE = "false" ] ; do
 
 done
 
-tar xvf rust-hyper-unixh2c-aarch64-unknown-linux-gnu.tar.gz
+tar xvf rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz
 
-systemctl --user restart rust-hyper-unixh2c.service
+systemctl --user restart rust-hyper-server.service

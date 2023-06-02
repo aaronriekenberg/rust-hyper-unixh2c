@@ -6,7 +6,7 @@
         {
             "server_protocol": "HTTP1",
             "server_socket_type": "UNIX",
-            "bind_address": "/home/aaron/rust-hyper-unixh2c/socket"
+            "bind_address": "/home/aaron/rust-hyper-server/socket"
         },
         {
             "server_protocol": "HTTP1",

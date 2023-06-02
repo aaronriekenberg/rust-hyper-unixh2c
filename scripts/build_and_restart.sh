@@ -1,12 +1,10 @@
 #!/bin/bash -x
 
-cd ~/rust-hyper-unixh2c
+cd ~/rust-hyper-server
 
-systemctl --user stop rust-hyper-unixh2c.service
+systemctl --user stop rust-hyper-server.service
 
 git pull -v
-
-export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 time cargo build -v --release -j2
 RESULT=$?
@@ -15,4 +13,4 @@ if [ $RESULT -ne 0 ]; then
   exit $RESULT
 fi
 
-systemctl --user restart rust-hyper-unixh2c.service
+systemctl --user restart rust-hyper-server.service

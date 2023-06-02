@@ -1,4 +1,4 @@
-# rust-hyper-unixh2c
+# rust-hyper-server
 
 ## What is this?
 Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
@@ -6,7 +6,7 @@ Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
 * Using [hyper](https://hyper.rs/) to do cleartext HTTP/2 (h2c) or HTTP/1.1 over a unix socket
 
 ## Github Actions
-When the release build is too slow on your Raspberry Pi: Use [github actions](https://github.com/aaronriekenberg/rust-hyper-unixh2c/actions) to cross-compile.
+When the release build is too slow on your Raspberry Pi: Use [github actions](https://github.com/aaronriekenberg/rust-hyper-server/actions) to cross-compile.
 
 ## Memory Usage
 This app runs in about 3.5 megabytes of resident memory (RSS) on a 64-bit Raspberry Pi.

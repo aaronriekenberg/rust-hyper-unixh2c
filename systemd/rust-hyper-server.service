@@ -1,0 +1,14 @@
+# ~/.config/systemd/user/rust-hyper-server.service
+
+[Unit]
+AssertPathExists=%h/rust-hyper-server/target/release/rust-hyper-server
+
+[Service]
+WorkingDirectory=%h/rust-hyper-server
+ExecStart=%h/rust-hyper-server/target/release/rust-hyper-server ./config/config.json
+Restart=always
+Environment=RUST_LOG=info
+UMask=007
+
+[Install]
+WantedBy=default.target
