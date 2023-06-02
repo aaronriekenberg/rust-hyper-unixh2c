@@ -3,7 +3,7 @@
 ## What is this?
 Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
 
-* Using [hyper](https://hyper.rs/) to do cleartext HTTP/2 (h2c) or HTTP/1.1 over a UNIX and/or TCP socket.
+* Using [hyper](https://hyper.rs/) to do cleartext HTTP/2 (h2c) or HTTP/1.1 over UNIX and/or TCP sockets.
 * Using [hyper-staticfile](https://github.com/stephank/hyper-staticfile) to serve static files.
 
 ## Github Actions
