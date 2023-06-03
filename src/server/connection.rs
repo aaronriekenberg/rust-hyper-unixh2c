@@ -7,9 +7,12 @@ use hyper::{
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::{
+    io::{AsyncRead, AsyncWrite},
+    time::Duration,
+};
 
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, pin::Pin, sync::Arc};
 
 use crate::{
     config::ServerProtocol,
@@ -18,6 +21,9 @@ use crate::{
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
 };
+
+const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(60);
+
 pub struct ConnectionHandler {
     handlers: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
@@ -70,25 +76,51 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        if let Err(http_err) = match server_protocol {
+        match server_protocol {
             ServerProtocol::Http1 => {
                 debug!("serving HTTP1 connection");
-                HyperHTTP1Builder::new()
-                    .serve_connection(stream, service)
-                    .await
+                let mut conn = HyperHTTP1Builder::new().serve_connection(stream, service);
+
+                let mut conn = Pin::new(&mut conn);
+
+                tokio::select! {
+                    res = &mut conn => {
+                        if let Err(err) = res {
+                            warn!("Error serving connection: {:?}", err);
+                            return;
+                        } else{
+                            debug!("after polling conn, no error");
+                        }
+                    }
+                    _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
+                        info!("got timeout_interval, calling conn.graceful_shutdown");
+                        conn.graceful_shutdown();
+                    }
+                }
             }
             ServerProtocol::Http2 => {
                 debug!("serving HTTP2 connection");
-                HyperHTTP2Builder::new(TokioExecutor)
-                    .serve_connection(stream, service)
-                    .await
+                let mut conn =
+                    HyperHTTP2Builder::new(TokioExecutor).serve_connection(stream, service);
+
+                let mut conn = Pin::new(&mut conn);
+
+                tokio::select! {
+                    res = &mut conn => {
+                        if let Err(err) = res {
+                            warn!("Error serving connection: {:?}", err);
+                            return;
+                        } else{
+                            debug!("after polling conn, no error");
+                        }
+                    }
+                    _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
+                        info!("got timeout_interval, calling conn.graceful_shutdown");
+                        conn.graceful_shutdown();
+                    }
+                }
             }
-        } {
-            warn!(
-                "Error while serving {:?} connection: {:?}",
-                server_protocol, http_err,
-            );
-        }
+        };
 
         info!("end handle_connection");
     }
