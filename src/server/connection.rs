@@ -22,20 +22,20 @@ use crate::{
     response::ResponseBody,
 };
 
-const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(60);
+const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(120);
 
 pub struct ConnectionHandler {
-    handlers: Box<dyn RequestHandler>,
+    request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
 }
 
 impl ConnectionHandler {
     pub fn new(
-        handlers: Box<dyn RequestHandler>,
+        request_handler: Box<dyn RequestHandler>,
         request_id_factory: RequestIDFactory,
     ) -> Arc<Self> {
         Arc::new(Self {
-            handlers,
+            request_handler,
             request_id_factory,
         })
     }
@@ -51,7 +51,7 @@ impl ConnectionHandler {
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
 
-        let result = self.handlers.handle(&http_request).await;
+        let result = self.request_handler.handle(&http_request).await;
 
         debug!("end handle_request");
         Ok(result)
@@ -85,11 +85,9 @@ impl ConnectionHandler {
 
                 tokio::select! {
                     res = &mut conn => {
-                        if let Err(err) = res {
-                            warn!("Error serving connection: {:?}", err);
-                            return;
-                        } else{
-                            debug!("after polling conn, no error");
+                        match res {
+                            Ok(()) => debug!("after polling conn, no error"),
+                            Err(e) =>  warn!("error serving connection: {:?}", e),
                         }
                     }
                     _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
@@ -107,11 +105,9 @@ impl ConnectionHandler {
 
                 tokio::select! {
                     res = &mut conn => {
-                        if let Err(err) = res {
-                            warn!("Error serving connection: {:?}", err);
-                            return;
-                        } else{
-                            debug!("after polling conn, no error");
+                        match res {
+                            Ok(()) => debug!("after polling conn, no error"),
+                            Err(e) =>  warn!("error serving connection: {:?}", e),
                         }
                     }
                     _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
