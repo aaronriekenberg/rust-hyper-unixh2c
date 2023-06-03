@@ -15,7 +15,7 @@ use tokio::{
 use std::{convert::Infallible, pin::Pin, sync::Arc};
 
 use crate::{
-    config::ServerProtocol,
+    config::{ServerProtocol, ServerSocketType},
     connection::{ConnectionGuard, ConnectionID},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
@@ -57,11 +57,16 @@ impl ConnectionHandler {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(conn_id = connection.id().as_usize()))]
+    #[instrument(skip_all, fields(
+        conn_id = connection.id().as_usize(),
+        sock = ?socket_type,
+        proto = ?server_protocol,
+    ))]
     pub async fn handle_connection<I: AsyncRead + AsyncWrite + Unpin + 'static>(
         self: Arc<Self>,
         stream: I,
         connection: ConnectionGuard,
+        socket_type: ServerSocketType,
         server_protocol: ServerProtocol,
     ) {
         info!("begin handle_connection");

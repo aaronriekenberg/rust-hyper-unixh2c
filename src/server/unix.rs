@@ -52,6 +52,7 @@ impl UnixServer {
             tokio::task::spawn(Arc::clone(&self.connection_handler).handle_connection(
                 unix_stream,
                 connection,
+                ServerSocketType::Unix,
                 *self.server_configuration.server_protocol(),
             ));
         }
