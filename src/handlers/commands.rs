@@ -1,5 +1,3 @@
-use std::{path::PathBuf, sync::Arc};
-
 use anyhow::Context;
 
 use async_trait::async_trait;
@@ -17,6 +15,8 @@ use tokio::{
 };
 
 use serde::Serialize;
+
+use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use crate::{
     handlers::route::RouteInfo,
@@ -118,6 +118,8 @@ impl RunCommandHandler {
 
     async fn run_command(&self) -> Result<std::process::Output, std::io::Error> {
         let output = Command::new(self.command_info.command())
+            .kill_on_drop(true)
+            .stdin(Stdio::null())
             .args(self.command_info.args())
             .output()
             .await?;
