@@ -36,4 +36,6 @@ done
 
 tar xvf rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz
 
+sudo setcap cap_net_bind_service=+ep ./rust-hyper-server
+
 systemctl --user restart rust-hyper-server.service
