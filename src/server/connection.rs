@@ -24,6 +24,8 @@ use crate::{
 
 const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(120);
 
+const CONNECTION_GRACEFUL_SHUTDOWN_DURATION: Duration = Duration::from_secs(5);
+
 pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
@@ -88,16 +90,24 @@ impl ConnectionHandler {
 
                 let mut conn = Pin::new(&mut conn);
 
-                tokio::select! {
-                    res = &mut conn => {
-                        match res {
-                            Ok(()) => debug!("after polling conn, no error"),
-                            Err(e) =>  warn!("error serving connection: {:?}", e),
+                for iter in 0..2 {
+                    let sleep_duration = match iter {
+                        0 => CONNECTION_MAX_LIFETIME_DURATION,
+                        _ => CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
+                    };
+                    info!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
+                    tokio::select! {
+                        res = conn.as_mut() => {
+                            match res {
+                                Ok(()) => info!("after polling conn, no error"),
+                                Err(e) =>  warn!("error serving connection: {:?}", e),
+                            };
+                            break;
                         }
-                    }
-                    _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
-                        info!("got timeout_interval, calling conn.graceful_shutdown");
-                        conn.graceful_shutdown();
+                        _ = tokio::time::sleep(sleep_duration) => {
+                            info!("iter = {} got timeout_interval, calling conn.graceful_shutdown",iter);
+                            conn.as_mut().graceful_shutdown();
+                        }
                     }
                 }
             }
@@ -108,16 +118,24 @@ impl ConnectionHandler {
 
                 let mut conn = Pin::new(&mut conn);
 
-                tokio::select! {
-                    res = &mut conn => {
-                        match res {
-                            Ok(()) => debug!("after polling conn, no error"),
-                            Err(e) =>  warn!("error serving connection: {:?}", e),
+                for iter in 0..2 {
+                    let sleep_duration = match iter {
+                        0 => CONNECTION_MAX_LIFETIME_DURATION,
+                        _ => CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
+                    };
+                    info!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
+                    tokio::select! {
+                        res = conn.as_mut() => {
+                            match res {
+                                Ok(()) => info!("after polling conn, no error"),
+                                Err(e) =>  warn!("error serving connection: {:?}", e),
+                            };
+                            break;
                         }
-                    }
-                    _ = tokio::time::sleep(CONNECTION_MAX_LIFETIME_DURATION) => {
-                        info!("got timeout_interval, calling conn.graceful_shutdown");
-                        conn.graceful_shutdown();
+                        _ = tokio::time::sleep(sleep_duration) => {
+                            info!("iter = {} got timeout_interval, calling conn.graceful_shutdown",iter);
+                            conn.as_mut().graceful_shutdown();
+                        }
                     }
                 }
             }
