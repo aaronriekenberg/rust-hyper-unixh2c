@@ -26,6 +26,11 @@ const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(120);
 
 const CONNECTION_GRACEFUL_SHUTDOWN_DURATION: Duration = Duration::from_secs(5);
 
+const SHUTDOWN_TIMEOUT_DURATIONS: &[Duration] = &[
+    CONNECTION_MAX_LIFETIME_DURATION,
+    CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
+];
+
 pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
@@ -90,11 +95,7 @@ impl ConnectionHandler {
 
                 let mut conn = Pin::new(&mut conn);
 
-                for iter in 0..2 {
-                    let sleep_duration = match iter {
-                        0 => CONNECTION_MAX_LIFETIME_DURATION,
-                        _ => CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
-                    };
+                for (iter, sleep_duration) in SHUTDOWN_TIMEOUT_DURATIONS.iter().enumerate() {
                     info!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
                     tokio::select! {
                         res = conn.as_mut() => {
@@ -104,7 +105,7 @@ impl ConnectionHandler {
                             };
                             break;
                         }
-                        _ = tokio::time::sleep(sleep_duration) => {
+                        _ = tokio::time::sleep(*sleep_duration) => {
                             info!("iter = {} got timeout_interval, calling conn.graceful_shutdown",iter);
                             conn.as_mut().graceful_shutdown();
                         }
@@ -118,11 +119,7 @@ impl ConnectionHandler {
 
                 let mut conn = Pin::new(&mut conn);
 
-                for iter in 0..2 {
-                    let sleep_duration = match iter {
-                        0 => CONNECTION_MAX_LIFETIME_DURATION,
-                        _ => CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
-                    };
+                for (iter, sleep_duration) in SHUTDOWN_TIMEOUT_DURATIONS.iter().enumerate() {
                     info!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
                     tokio::select! {
                         res = conn.as_mut() => {
@@ -132,7 +129,7 @@ impl ConnectionHandler {
                             };
                             break;
                         }
-                        _ = tokio::time::sleep(sleep_duration) => {
+                        _ = tokio::time::sleep(*sleep_duration) => {
                             info!("iter = {} got timeout_interval, calling conn.graceful_shutdown",iter);
                             conn.as_mut().graceful_shutdown();
                         }
