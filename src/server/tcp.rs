@@ -50,12 +50,9 @@ impl TCPServer {
                 )
                 .await;
 
-            tokio::task::spawn(Arc::clone(&self.connection_handler).handle_connection(
-                tcp_stream,
-                connection,
-                ServerSocketType::Tcp,
-                *self.server_configuration.server_protocol(),
-            ));
+            tokio::task::spawn(
+                Arc::clone(&self.connection_handler).handle_connection(tcp_stream, connection),
+            );
         }
     }
 }

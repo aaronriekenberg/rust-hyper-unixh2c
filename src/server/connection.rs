@@ -15,7 +15,7 @@ use tokio::{
 use std::{convert::Infallible, pin::Pin, sync::Arc};
 
 use crate::{
-    config::{ServerProtocol, ServerSocketType},
+    config::ServerProtocol,
     connection::{ConnectionGuard, ConnectionID},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
@@ -66,15 +66,13 @@ impl ConnectionHandler {
 
     #[instrument(skip_all, fields(
         conn_id = connection.id().as_usize(),
-        sock = ?socket_type,
-        proto = ?server_protocol,
+        sock = ?connection.server_socket_type(),
+        proto = ?connection.server_protocol(),
     ))]
-    pub async fn handle_connection<I: AsyncRead + AsyncWrite + Unpin + 'static>(
+    pub async fn handle_connection(
         self: Arc<Self>,
-        stream: I,
+        stream: impl AsyncRead + AsyncWrite + Unpin + 'static,
         connection: ConnectionGuard,
-        socket_type: ServerSocketType,
-        server_protocol: ServerProtocol,
     ) {
         info!("begin handle_connection");
 
@@ -88,7 +86,7 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        match server_protocol {
+        match connection.server_protocol() {
             ServerProtocol::Http1 => {
                 debug!("serving HTTP1 connection");
                 let mut conn = HyperHTTP1Builder::new().serve_connection(stream, service);

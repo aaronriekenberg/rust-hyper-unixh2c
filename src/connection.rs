@@ -63,20 +63,30 @@ impl ConnectionInfo {
     }
 }
 
+#[derive(CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct ConnectionGuard {
     id: ConnectionID,
+    server_protocol: ServerProtocol,
+    server_socket_type: ServerSocketType,
+    #[getset(skip)]
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionGuard {
-    fn new(id: ConnectionID, num_requests: Arc<AtomicUsize>) -> Self {
-        Self { id, num_requests }
+    fn new(
+        id: ConnectionID,
+        server_protocol: ServerProtocol,
+        server_socket_type: ServerSocketType,
+        num_requests: Arc<AtomicUsize>,
+    ) -> Self {
+        Self {
+            id,
+            server_protocol,
+            server_socket_type,
+            num_requests,
+        }
     }
-
-    pub fn id(&self) -> ConnectionID {
-        self.id
-    }
-
     pub fn increment_num_requests(&self) {
         self.num_requests.fetch_add(1, Ordering::Relaxed);
     }

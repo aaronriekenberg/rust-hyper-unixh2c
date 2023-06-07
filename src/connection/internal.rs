@@ -75,7 +75,12 @@ impl ConnectionTrackerState {
 
         debug!("add_connection num_connections = {}", num_connections);
 
-        ConnectionGuard::new(connection_id, num_requests)
+        ConnectionGuard::new(
+            connection_id,
+            server_protocol,
+            server_socket_type,
+            num_requests,
+        )
     }
 
     pub fn remove_connection(&mut self, connection_id: ConnectionID) {
