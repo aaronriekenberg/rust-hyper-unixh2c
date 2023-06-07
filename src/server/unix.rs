@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 use tracing::{debug, info};
 
 use tokio::net::UnixListener;
@@ -33,9 +35,13 @@ impl UnixServer {
         let remove_result = tokio::fs::remove_file(path).await;
         debug!("remove_result = {:?}", remove_result);
 
-        let unix_listener = UnixListener::bind(path)?;
+        let unix_listener = UnixListener::bind(path)
+            .with_context(|| format!("UNIX server bind path = {:?}", path))?;
 
-        let local_addr = unix_listener.local_addr()?;
+        let local_addr = unix_listener
+            .local_addr()
+            .with_context(|| format!("UNIX server local_addr error path = {:?}", path))?;
+
         info!("listening on unix {:?}", local_addr);
 
         loop {

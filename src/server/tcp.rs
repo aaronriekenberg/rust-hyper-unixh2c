@@ -1,3 +1,4 @@
+use anyhow::Context;
 use tracing::{info, warn};
 
 use tokio::net::TcpListener;
@@ -27,18 +28,23 @@ impl TCPServer {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        let path = self.server_configuration.bind_address();
+        let address = self.server_configuration.bind_address();
 
-        let tcp_listener = TcpListener::bind(path).await?;
+        let tcp_listener = TcpListener::bind(address)
+            .await
+            .with_context(|| format!("TCP server bind error address = {:?}", address))?;
 
-        let local_addr = tcp_listener.local_addr()?;
+        let local_addr = tcp_listener
+            .local_addr()
+            .with_context(|| format!("TCP server local_addr error address = {:?}", address))?;
+
         info!("listening on tcp {:?}", local_addr);
 
         loop {
             let (tcp_stream, _remote_addr) = tcp_listener.accept().await?;
 
             if let Err(e) = tcp_stream.set_nodelay(true) {
-                warn!("error setting tcp no delay {}", e);
+                warn!("error setting tcp no delay {:?}", e);
                 continue;
             };
 

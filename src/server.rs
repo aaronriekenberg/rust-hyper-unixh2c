@@ -32,12 +32,12 @@ impl Server {
                     ServerSocketType::Tcp => {
                         let server =
                             TCPServer::new(connection_handler_clone, server_configuration).await;
-                        server.run().await.context("TCP server run error")?;
+                        server.run().await?;
                     }
                     ServerSocketType::Unix => {
                         let server =
                             UnixServer::new(connection_handler_clone, server_configuration).await;
-                        server.run().await.context("UNIX server run error")?;
+                        server.run().await?;
                     }
                 };
                 Ok(())
