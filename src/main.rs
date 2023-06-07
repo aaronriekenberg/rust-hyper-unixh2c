@@ -12,7 +12,7 @@ mod version;
 
 use anyhow::Context;
 
-use tracing::info;
+use tracing::{error, info};
 
 async fn log_version_info() {
     info!("Version Info:");
@@ -25,10 +25,7 @@ fn app_name() -> String {
     std::env::args().next().unwrap_or("[UNKNOWN]".to_owned())
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
+async fn try_main() -> anyhow::Result<()> {
     log_version_info().await;
 
     let config_file = std::env::args().nth(1).with_context(|| {
@@ -47,4 +44,14 @@ async fn main() -> anyhow::Result<()> {
     let server = crate::server::Server::new(handlers).await;
 
     server.run().await
+}
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt::init();
+
+    if let Err(err) = try_main().await {
+        error!("fatal error in main:\n{:#}", err);
+        std::process::exit(1);
+    }
 }
