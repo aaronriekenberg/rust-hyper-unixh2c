@@ -6,7 +6,7 @@ use hyper::http::{Response, StatusCode};
 
 use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use std::{path::Path, time::SystemTime};
 
@@ -26,12 +26,19 @@ struct StaticFileHandler {
 
 impl StaticFileHandler {
     fn new() -> Self {
-        let config = crate::config::instance();
-        let root = Path::new(config.static_file_configuration().path());
+        let static_file_configuration = crate::config::instance().static_file_configuration();
+        let root = Path::new(static_file_configuration.path());
 
-        Self {
-            resolver: hyper_staticfile::Resolver::new(root),
-        }
+        let mut resolver = Resolver::new(root);
+        resolver.allowed_encodings.gzip = *static_file_configuration.precompressed_gz();
+        resolver.allowed_encodings.br = *static_file_configuration.precompressed_br();
+
+        info!(
+            "resolver.allowed_encodings = {:?}",
+            resolver.allowed_encodings
+        );
+
+        Self { resolver }
     }
 
     fn block_dot_paths(&self, resolve_result: &ResolveResult) -> Option<Response<ResponseBody>> {

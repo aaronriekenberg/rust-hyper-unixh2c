@@ -115,6 +115,8 @@
         ]
     },
     "static_file_configuration": {
-        "path": "/home/aaron/aaronr.digital"
+        "path": "/home/aaron/aaronr.digital",
+        "precompressed_br": false,
+        "precompressed_gz": true
     }
 }

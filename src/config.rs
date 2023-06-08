@@ -63,6 +63,8 @@ pub struct CommandConfiguration {
 #[getset(get = "pub")]
 pub struct StaticFileConfiguration {
     path: String,
+    precompressed_br: bool,
+    precompressed_gz: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
