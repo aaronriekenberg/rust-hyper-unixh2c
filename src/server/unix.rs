@@ -10,7 +10,7 @@ use crate::{config::ServerSocketType, connection::ConnectionTracker};
 
 use super::ConnectionHandler;
 
-pub struct UnixServer {
+pub(super) struct UnixServer {
     connection_handler: Arc<ConnectionHandler>,
     connection_tracker: &'static ConnectionTracker,
     server_configuration: &'static crate::config::ServerConfiguration,

@@ -9,7 +9,7 @@ use crate::{config::ServerSocketType, connection::ConnectionTracker};
 
 use super::ConnectionHandler;
 
-pub struct TCPServer {
+pub(super) struct TCPServer {
     connection_handler: Arc<ConnectionHandler>,
     connection_tracker: &'static ConnectionTracker,
     server_configuration: &'static crate::config::ServerConfiguration,
