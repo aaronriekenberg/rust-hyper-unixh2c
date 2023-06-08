@@ -5,9 +5,9 @@ use tokio::net::TcpListener;
 
 use std::sync::Arc;
 
-use crate::{
-    config::ServerSocketType, connection::ConnectionTracker, server::connection::ConnectionHandler,
-};
+use crate::{config::ServerSocketType, connection::ConnectionTracker};
+
+use super::ConnectionHandler;
 
 pub struct TCPServer {
     connection_handler: Arc<ConnectionHandler>,
@@ -16,7 +16,7 @@ pub struct TCPServer {
 }
 
 impl TCPServer {
-    pub async fn new(
+    pub(super) async fn new(
         connection_handler: Arc<ConnectionHandler>,
         server_configuration: &'static crate::config::ServerConfiguration,
     ) -> Self {
@@ -27,7 +27,7 @@ impl TCPServer {
         }
     }
 
-    pub async fn run(self) -> anyhow::Result<()> {
+    pub(super) async fn run(self) -> anyhow::Result<()> {
         let address = self.server_configuration.bind_address();
 
         let tcp_listener = TcpListener::bind(address)
