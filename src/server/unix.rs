@@ -6,18 +6,18 @@ use tokio::net::UnixListener;
 
 use std::sync::Arc;
 
-use crate::{config::ServerSocketType, connection::ConnectionTracker};
+use crate::{
+    config::ServerSocketType, connection::ConnectionTracker, server::connection::ConnectionHandler,
+};
 
-use super::ConnectionHandler;
-
-pub(super) struct UnixServer {
+pub struct UnixServer {
     connection_handler: Arc<ConnectionHandler>,
     connection_tracker: &'static ConnectionTracker,
     server_configuration: &'static crate::config::ServerConfiguration,
 }
 
 impl UnixServer {
-    pub(super) async fn new(
+    pub async fn new(
         connection_handler: Arc<ConnectionHandler>,
         server_configuration: &'static crate::config::ServerConfiguration,
     ) -> Self {
@@ -28,7 +28,7 @@ impl UnixServer {
         }
     }
 
-    pub(super) async fn run(self) -> anyhow::Result<()> {
+    pub async fn run(self) -> anyhow::Result<()> {
         let path = self.server_configuration.bind_address();
 
         // do not fail on remove error, the path may not exist.

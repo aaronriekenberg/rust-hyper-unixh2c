@@ -1,22 +1,23 @@
 use anyhow::Context;
+
 use tracing::{info, warn};
 
 use tokio::net::TcpListener;
 
 use std::sync::Arc;
 
-use crate::{config::ServerSocketType, connection::ConnectionTracker};
+use crate::{
+    config::ServerSocketType, connection::ConnectionTracker, server::connection::ConnectionHandler,
+};
 
-use super::ConnectionHandler;
-
-pub(super) struct TCPServer {
+pub struct TCPServer {
     connection_handler: Arc<ConnectionHandler>,
     connection_tracker: &'static ConnectionTracker,
     server_configuration: &'static crate::config::ServerConfiguration,
 }
 
 impl TCPServer {
-    pub(super) async fn new(
+    pub async fn new(
         connection_handler: Arc<ConnectionHandler>,
         server_configuration: &'static crate::config::ServerConfiguration,
     ) -> Self {
@@ -27,7 +28,7 @@ impl TCPServer {
         }
     }
 
-    pub(super) async fn run(self) -> anyhow::Result<()> {
+    pub async fn run(self) -> anyhow::Result<()> {
         let address = self.server_configuration.bind_address();
 
         let tcp_listener = TcpListener::bind(address)
