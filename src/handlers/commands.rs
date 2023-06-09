@@ -2,8 +2,6 @@ use anyhow::Context;
 
 use async_trait::async_trait;
 
-use http_body_util::{BodyExt, Full};
-
 use hyper::http::{Method, Response, StatusCode};
 
 use tracing::warn;
@@ -20,7 +18,10 @@ use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use crate::{
     handlers::route::RouteInfo,
-    handlers::utils::{build_json_body_response, build_json_response, build_status_code_response},
+    handlers::utils::{
+        build_json_body_response, build_json_response, build_status_code_response,
+        static_string_response_body,
+    },
     handlers::{HttpRequest, RequestHandler, ResponseBody},
     response::CacheControl,
     time::current_local_date_time_string,
@@ -55,7 +56,7 @@ impl RequestHandler for AllCommandsHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
         let json_string = Self::json_string().await.unwrap();
         build_json_body_response(
-            Full::from(json_string).map_err(|e| e.into()).boxed(),
+            static_string_response_body(json_string),
             CacheControl::NoCache,
         )
     }

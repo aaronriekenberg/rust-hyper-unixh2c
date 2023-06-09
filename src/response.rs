@@ -4,6 +4,8 @@ use http_body_util::combinators::BoxBody;
 
 use hyper::http::HeaderValue;
 
+use std::convert::Infallible;
+
 #[derive(Clone, Copy, Debug)]
 pub enum CacheControl {
     NoCache,
@@ -23,4 +25,16 @@ impl CacheControl {
     }
 }
 
-pub type ResponseBody = BoxBody<Bytes, Box<dyn std::error::Error + Send + Sync + 'static>>;
+#[derive(thiserror::Error, Debug)]
+pub enum ResponseBodyError {
+    #[error("io error: {0}")]
+    IoError(#[from] std::io::Error),
+}
+
+impl From<Infallible> for ResponseBodyError {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
+    }
+}
+
+pub type ResponseBody = BoxBody<Bytes, ResponseBodyError>;

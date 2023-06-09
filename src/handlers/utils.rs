@@ -61,3 +61,7 @@ pub fn build_status_code_response(
 pub fn empty_response_body() -> ResponseBody {
     Empty::new().map_err(|never| never.into()).boxed()
 }
+
+pub fn static_string_response_body(s: &'static str) -> ResponseBody {
+    Full::from(s).map_err(|e| e.into()).boxed()
+}
