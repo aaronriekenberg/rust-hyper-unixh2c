@@ -2,6 +2,8 @@ use bytes::Bytes;
 
 use http_body_util::combinators::BoxBody;
 
+use hyper::http::HeaderValue;
+
 #[derive(Clone, Copy, Debug)]
 pub enum CacheControl {
     NoCache,
@@ -9,11 +11,13 @@ pub enum CacheControl {
 }
 
 impl CacheControl {
-    pub fn header_value(&self) -> String {
+    pub fn header_value(&self) -> HeaderValue {
+        static NO_CACHE_VALUE: HeaderValue = HeaderValue::from_static("public, no-cache");
+
         match self {
-            CacheControl::NoCache => "public, no-cache".to_owned(),
+            CacheControl::NoCache => NO_CACHE_VALUE.clone(),
             // CacheControl::Cache { max_age_seconds } => {
-            //     format!("public, max-age={}", max_age_seconds)
+            //    format!("public, max-age={}", max_age_seconds)
             // }
         }
     }
