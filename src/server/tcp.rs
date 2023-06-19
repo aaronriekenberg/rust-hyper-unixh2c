@@ -13,23 +13,23 @@ use crate::{
 pub struct TCPServer {
     connection_handler: Arc<ConnectionHandler>,
     connection_tracker: &'static ConnectionTracker,
-    server_configuration: &'static crate::config::ServerConfiguration,
+    listener_configuration: &'static crate::config::ServerListenerConfiguration,
 }
 
 impl TCPServer {
     pub async fn new(
         connection_handler: Arc<ConnectionHandler>,
-        server_configuration: &'static crate::config::ServerConfiguration,
+        listener_configuration: &'static crate::config::ServerListenerConfiguration,
     ) -> Self {
         Self {
             connection_handler,
             connection_tracker: ConnectionTracker::instance().await,
-            server_configuration,
+            listener_configuration,
         }
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        let address = self.server_configuration.bind_address();
+        let address = self.listener_configuration.bind_address();
 
         let tcp_listener = TcpListener::bind(address)
             .await
@@ -49,17 +49,18 @@ impl TCPServer {
                 continue;
             };
 
-            let connection = self
+            if let Some(connection) = self
                 .connection_tracker
                 .add_connection(
-                    self.server_configuration.server_protocol(),
+                    self.listener_configuration.server_protocol(),
                     ServerSocketType::Tcp,
                 )
-                .await;
-
-            tokio::task::spawn(
-                Arc::clone(&self.connection_handler).handle_connection(tcp_stream, connection),
-            );
+                .await
+            {
+                tokio::task::spawn(
+                    Arc::clone(&self.connection_handler).handle_connection(tcp_stream, connection),
+                );
+            }
         }
     }
 }

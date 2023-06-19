@@ -25,18 +25,21 @@ impl Server {
 
         let configuration = crate::config::instance();
 
-        for server_configuration in configuration.server_configurations() {
+        for listener_configuration in configuration
+            .server_configuration()
+            .listener_configurations()
+        {
             let connection_handler_clone = Arc::clone(&connection_handler);
             join_set.spawn(async move {
-                match server_configuration.server_socket_type() {
+                match listener_configuration.server_socket_type() {
                     ServerSocketType::Tcp => {
                         let server =
-                            TCPServer::new(connection_handler_clone, server_configuration).await;
+                            TCPServer::new(connection_handler_clone, listener_configuration).await;
                         server.run().await?;
                     }
                     ServerSocketType::Unix => {
                         let server =
-                            UnixServer::new(connection_handler_clone, server_configuration).await;
+                            UnixServer::new(connection_handler_clone, listener_configuration).await;
                         server.run().await?;
                     }
                 };

@@ -120,7 +120,7 @@ impl ConnectionTracker {
         &self,
         server_protocol: ServerProtocol,
         server_socket_type: ServerSocketType,
-    ) -> ConnectionGuard {
+    ) -> Option<ConnectionGuard> {
         let mut state = self.state.write().await;
 
         state.add_connection(server_protocol, server_socket_type)
@@ -137,6 +137,7 @@ impl ConnectionTracker {
 
         ConnectionTrackerState {
             max_open_connections: state.max_open_connections(),
+            connection_limit_hits: state.connection_limit_hits(),
             max_connection_age: state.max_connection_age(),
             max_requests_per_connection: state.max_requests_per_connection(),
             open_connections: state.open_connections().cloned().collect(),
@@ -152,6 +153,7 @@ impl ConnectionTracker {
 
 pub struct ConnectionTrackerState {
     pub max_open_connections: usize,
+    pub connection_limit_hits: usize,
     pub max_connection_age: Duration,
     pub max_requests_per_connection: usize,
     pub open_connections: Vec<ConnectionInfo>,

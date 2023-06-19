@@ -33,7 +33,7 @@ pub enum ServerSocketType {
 }
 
 #[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
-pub struct ServerConfiguration {
+pub struct ServerListenerConfiguration {
     #[getset(get_copy = "pub")]
     server_protocol: ServerProtocol,
 
@@ -42,6 +42,15 @@ pub struct ServerConfiguration {
 
     #[getset(get = "pub")]
     bind_address: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+pub struct ServerConfiguration {
+    #[getset(get = "pub")]
+    listener_configurations: Vec<ServerListenerConfiguration>,
+
+    #[getset(get_copy = "pub")]
+    connection_limit: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
@@ -83,7 +92,7 @@ pub struct StaticFileConfiguration {
 #[getset(get = "pub")]
 pub struct Configuration {
     context_configuration: ContextConfiguration,
-    server_configurations: Vec<ServerConfiguration>,
+    server_configuration: ServerConfiguration,
     command_configuration: CommandConfiguration,
     static_file_configuration: StaticFileConfiguration,
 }
