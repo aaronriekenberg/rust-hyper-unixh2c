@@ -52,7 +52,7 @@ impl TCPServer {
             let connection = self
                 .connection_tracker
                 .add_connection(
-                    *self.server_configuration.server_protocol(),
+                    self.server_configuration.server_protocol(),
                     ServerSocketType::Tcp,
                 )
                 .await;

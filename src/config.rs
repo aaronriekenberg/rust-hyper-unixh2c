@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-use getset::Getters;
+use getset::{CopyGetters, Getters};
 
 use tracing::info;
 
@@ -32,11 +32,15 @@ pub enum ServerSocketType {
     Unix,
 }
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct ServerConfiguration {
+    #[getset(get_copy = "pub")]
     server_protocol: ServerProtocol,
+
+    #[getset(get_copy = "pub")]
     server_socket_type: ServerSocketType,
+
+    #[getset(get = "pub")]
     bind_address: String,
 }
 
@@ -50,20 +54,28 @@ pub struct CommandInfo {
     args: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct CommandConfiguration {
+    #[getset(get_copy = "pub")]
     max_concurrent_commands: usize,
+
+    #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
     semaphore_acquire_timeout: std::time::Duration,
+
+    #[getset(get = "pub")]
     commands: Vec<CommandInfo>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct StaticFileConfiguration {
+    #[getset(get = "pub")]
     path: String,
+
+    #[getset(get_copy = "pub")]
     precompressed_br: bool,
+
+    #[getset(get_copy = "pub")]
     precompressed_gz: bool,
 }
 

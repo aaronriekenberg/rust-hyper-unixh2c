@@ -30,8 +30,8 @@ impl StaticFileHandler {
         let root = Path::new(static_file_configuration.path());
 
         let mut resolver = Resolver::new(root);
-        resolver.allowed_encodings.gzip = *static_file_configuration.precompressed_gz();
-        resolver.allowed_encodings.br = *static_file_configuration.precompressed_br();
+        resolver.allowed_encodings.gzip = static_file_configuration.precompressed_gz();
+        resolver.allowed_encodings.br = static_file_configuration.precompressed_br();
 
         info!(
             "resolver.allowed_encodings = {:?}",
