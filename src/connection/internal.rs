@@ -63,12 +63,16 @@ impl ConnectionTrackerState {
         ConnectionID(connection_id)
     }
 
+    fn new_connection_exceeds_connection_limit(&self) -> bool {
+        (self.id_to_connection_info.len() + 1) >= self.connection_limit
+    }
+
     pub fn add_connection(
         &mut self,
         server_protocol: ServerProtocol,
         server_socket_type: ServerSocketType,
     ) -> Option<ConnectionGuard> {
-        if (self.id_to_connection_info.len() + 1) >= self.connection_limit {
+        if self.new_connection_exceeds_connection_limit() {
             warn!("add_connection hit connection_limit = {} server_protocol = {:?} server_socket_type = {:?}", 
                 self.connection_limit,
                 server_protocol,
