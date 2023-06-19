@@ -11,7 +11,7 @@ use tokio::{fs::File, io::AsyncReadExt, sync::OnceCell};
 #[derive(Debug, Deserialize, Serialize, Getters)]
 #[getset(get = "pub")]
 pub struct ContextConfiguration {
-    context: String,
+    dynamic_route_context: String,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]

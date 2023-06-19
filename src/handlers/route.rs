@@ -50,7 +50,11 @@ impl Router {
             default_route,
         };
 
-        let context_path = Path::new(crate::config::instance().context_configuration().context());
+        let context_path = Path::new(
+            crate::config::instance()
+                .context_configuration()
+                .dynamic_route_context(),
+        );
 
         for route in routes {
             let route_key = Self::build_route_key(context_path, &route)?;

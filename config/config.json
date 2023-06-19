@@ -1,6 +1,6 @@
 {
     "context_configuration": {
-        "context": "/cgi-bin"
+        "dynamic_route_context": "/cgi-bin"
     },
     "server_configurations": [
         {
