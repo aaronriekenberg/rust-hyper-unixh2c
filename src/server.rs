@@ -25,10 +25,7 @@ impl Server {
 
         let configuration = crate::config::instance();
 
-        for listener_configuration in configuration
-            .server_configuration()
-            .listener_configurations()
-        {
+        for listener_configuration in configuration.server_configuration().listeners() {
             let connection_handler_clone = Arc::clone(&connection_handler);
             join_set.spawn(async move {
                 match listener_configuration.server_socket_type() {

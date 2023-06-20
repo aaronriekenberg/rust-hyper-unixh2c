@@ -3,7 +3,7 @@
         "dynamic_route_context": "/cgi-bin"
     },
     "server_configuration": {
-        "listener_configurations": [
+        "listeners": [
             {
                 "server_protocol": "HTTP1",
                 "server_socket_type": "UNIX",

@@ -47,7 +47,7 @@ pub struct ServerListenerConfiguration {
 #[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct ServerConfiguration {
     #[getset(get = "pub")]
-    listener_configurations: Vec<ServerListenerConfiguration>,
+    listeners: Vec<ServerListenerConfiguration>,
 
     #[getset(get_copy = "pub")]
     connection_limit: usize,
