@@ -6,7 +6,7 @@ use hyper::http::{Response, StatusCode};
 
 use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 use std::{path::Path, time::SystemTime};
 
@@ -33,7 +33,7 @@ impl StaticFileHandler {
         resolver.allowed_encodings.gzip = static_file_configuration.precompressed_gz();
         resolver.allowed_encodings.br = static_file_configuration.precompressed_br();
 
-        info!(
+        debug!(
             "resolver.allowed_encodings = {:?}",
             resolver.allowed_encodings
         );

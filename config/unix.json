@@ -15,7 +15,9 @@
                 "bind_address": "[::]:8080"
             }
         ],
-        "connection_limit": 4
+        "connection_limit": 4,
+        "connection_max_lifetime": "2m",
+        "connection_graceful_shutdown_timeout": "5s"
     },
     "command_configuration": {
         "max_concurrent_commands": 1,

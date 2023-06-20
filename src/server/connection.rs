@@ -22,18 +22,10 @@ use crate::{
     response::ResponseBody,
 };
 
-const CONNECTION_MAX_LIFETIME_DURATION: Duration = Duration::from_secs(120);
-
-const CONNECTION_GRACEFUL_SHUTDOWN_DURATION: Duration = Duration::from_secs(5);
-
-const CONNECTION_TIMEOUT_DURATIONS: &[Duration] = &[
-    CONNECTION_MAX_LIFETIME_DURATION,
-    CONNECTION_GRACEFUL_SHUTDOWN_DURATION,
-];
-
 pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
+    connection_timeout_durations: Vec<Duration>,
 }
 
 impl ConnectionHandler {
@@ -41,9 +33,22 @@ impl ConnectionHandler {
         request_handler: Box<dyn RequestHandler>,
         request_id_factory: RequestIDFactory,
     ) -> Arc<Self> {
+        let server_configuration = crate::config::instance().server_configuration();
+
+        let connection_timeout_durations = vec![
+            server_configuration.connection_max_lifetime(),
+            server_configuration.connection_graceful_shutdown_timeout(),
+        ];
+
+        debug!(
+            "connection_timeout_durations = {:?}",
+            connection_timeout_durations
+        );
+
         Arc::new(Self {
             request_handler,
             request_id_factory,
+            connection_timeout_durations,
         })
     }
 
@@ -104,7 +109,7 @@ impl ConnectionHandler {
 
         let mut conn = Pin::new(&mut conn);
 
-        for (iter, sleep_duration) in CONNECTION_TIMEOUT_DURATIONS.iter().enumerate() {
+        for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
             debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
             tokio::select! {
                 res = conn.as_mut() => {
@@ -142,7 +147,7 @@ impl ConnectionHandler {
 
         let mut conn = Pin::new(&mut conn);
 
-        for (iter, sleep_duration) in CONNECTION_TIMEOUT_DURATIONS.iter().enumerate() {
+        for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
             debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
             tokio::select! {
                 res = conn.as_mut() => {

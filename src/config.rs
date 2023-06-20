@@ -6,7 +6,7 @@ use tracing::info;
 
 use serde::{Deserialize, Serialize};
 
-use tokio::{fs::File, io::AsyncReadExt, sync::OnceCell};
+use tokio::{fs::File, io::AsyncReadExt, sync::OnceCell, time::Duration};
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
 #[getset(get = "pub")]
@@ -51,6 +51,14 @@ pub struct ServerConfiguration {
 
     #[getset(get_copy = "pub")]
     connection_limit: usize,
+
+    #[getset(get_copy = "pub")]
+    #[serde(with = "humantime_serde")]
+    connection_max_lifetime: Duration,
+
+    #[getset(get_copy = "pub")]
+    #[serde(with = "humantime_serde")]
+    connection_graceful_shutdown_timeout: Duration,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
@@ -70,7 +78,7 @@ pub struct CommandConfiguration {
 
     #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
-    semaphore_acquire_timeout: std::time::Duration,
+    semaphore_acquire_timeout: Duration,
 
     #[getset(get = "pub")]
     commands: Vec<CommandInfo>,
