@@ -24,16 +24,6 @@
         "semaphore_acquire_timeout": "200ms",
         "commands": [
             {
-                "id": "chronyc_sources",
-                "description": "chronyc sources",
-                "command": "/usr/bin/chronyc",
-                "args": [
-                    "-n",
-                    "sources",
-                    "-v"
-                ]
-            },
-            {
                 "id": "df",
                 "description": "df",
                 "command": "/usr/bin/df",
@@ -81,6 +71,14 @@
                 "id": "pithrottle",
                 "description": "pithrottle",
                 "command": "/home/aaron/repo/raspberrypi/pithrottle.sh"
+            },
+            {
+                "id": "timedatectl_timesync_status",
+                "description": "timedatectl timesync status",
+                "command": "/usr/bin/timedatectl",
+                "args": [
+                    "timesync-status"
+                ]
             },
             {
                 "id": "top",
