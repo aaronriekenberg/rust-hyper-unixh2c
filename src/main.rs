@@ -10,6 +10,8 @@ mod server;
 mod time;
 mod version;
 
+use std::io::IsTerminal;
+
 use anyhow::Context;
 
 use tracing::{error, info};
@@ -46,9 +48,20 @@ async fn try_main() -> anyhow::Result<()> {
     server.run().await
 }
 
+fn initialize_tracing_subscriber() {
+    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+
+    let use_ansi = std::io::stdout().is_terminal();
+
+    tracing_subscriber::registry()
+        .with(fmt::layer().with_ansi(use_ansi))
+        .with(EnvFilter::from_default_env())
+        .init();
+}
+
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    initialize_tracing_subscriber();
 
     if let Err(err) = try_main().await {
         error!("fatal error in main:\n{:#}", err);
