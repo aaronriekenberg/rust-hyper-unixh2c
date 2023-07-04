@@ -49,13 +49,17 @@ async fn try_main() -> anyhow::Result<()> {
 }
 
 fn initialize_tracing_subscriber() {
-    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+    use tracing_subscriber::{filter::LevelFilter, fmt, prelude::*, EnvFilter};
 
     let use_ansi = std::io::stdout().is_terminal();
 
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
+
     tracing_subscriber::registry()
         .with(fmt::layer().with_ansi(use_ansi))
-        .with(EnvFilter::from_default_env())
+        .with(env_filter)
         .init();
 }
 
