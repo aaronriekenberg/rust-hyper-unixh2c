@@ -10,8 +10,6 @@ mod server;
 mod time;
 mod version;
 
-use std::io::IsTerminal;
-
 use anyhow::Context;
 
 use tracing::{error, info};
@@ -51,6 +49,8 @@ async fn try_main() -> anyhow::Result<()> {
 fn initialize_tracing_subscriber() {
     use tracing_subscriber::{filter::LevelFilter, fmt, prelude::*, EnvFilter};
 
+    use std::io::IsTerminal;
+
     let use_ansi = std::io::stdout().is_terminal();
 
     let env_filter = EnvFilter::builder()
@@ -58,8 +58,8 @@ fn initialize_tracing_subscriber() {
         .from_env_lossy();
 
     tracing_subscriber::registry()
-        .with(fmt::layer().with_ansi(use_ansi))
         .with(env_filter)
+        .with(fmt::layer().with_ansi(use_ansi))
         .init();
 }
 
