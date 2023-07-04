@@ -20,18 +20,12 @@ echo "RELEASE_VERSION_WITHOUT_V=$RELEASE_VERSION_WITHOUT_V"
 cd ~/rust-hyper-server
 
 toml set Cargo.toml package.version $RELEASE_VERSION_WITHOUT_V > Cargo.toml.tmp
-RESULT=$?
-echo "toml set test RESULT = $RESULT"
 
 mv Cargo.toml.tmp Cargo.toml
 
 cargo build -v
-RESULT=$?
-echo "cargo build RESULT = $RESULT"
 
 cargo test -v
-RESULT=$?
-echo "cargo test RESULT = $RESULT"
 
 git add Cargo.toml Cargo.lock
 
