@@ -100,12 +100,12 @@ impl ConnectionHandler {
         let mut wrapped_conn = match connection.server_protocol() {
             ServerProtocol::Http1 => {
                 let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
-                WrappedHyperConnection::H1(conn)
+                HyperH1OrH2Connection::H1(conn)
             }
             ServerProtocol::Http2 => {
                 let conn = HyperHTTP2Builder::new(self.tokio_executor.clone())
                     .serve_connection(stream, service);
-                WrappedHyperConnection::H2(conn)
+                HyperH1OrH2Connection::H2(conn)
             }
         };
 
@@ -132,8 +132,8 @@ impl ConnectionHandler {
     }
 }
 
-#[pin_project(project = WrappedHyperConnectionProj)]
-enum WrappedHyperConnection<I, S, E>
+#[pin_project(project = HyperH1OrH2ConnectionProj)]
+enum HyperH1OrH2Connection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
     S: hyper::service::HttpService<
@@ -147,7 +147,7 @@ where
     H2(#[pin] HyperHTTP2Connection<I, S, E>),
 }
 
-impl<I, S, E> std::future::Future for WrappedHyperConnection<I, S, E>
+impl<I, S, E> std::future::Future for HyperH1OrH2Connection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
     S: hyper::service::HttpService<
@@ -164,13 +164,13 @@ where
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         match self.project() {
-            WrappedHyperConnectionProj::H1(h1_conn) => h1_conn.poll(cx),
-            WrappedHyperConnectionProj::H2(h2_conn) => h2_conn.poll(cx),
+            HyperH1OrH2ConnectionProj::H1(h1_conn) => h1_conn.poll(cx),
+            HyperH1OrH2ConnectionProj::H2(h2_conn) => h2_conn.poll(cx),
         }
     }
 }
 
-impl<I, S, E> WrappedHyperConnection<I, S, E>
+impl<I, S, E> HyperH1OrH2Connection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
     S: hyper::service::HttpService<
@@ -182,8 +182,8 @@ where
 {
     pub fn graceful_shutdown(self: Pin<&mut Self>) {
         match self.project() {
-            WrappedHyperConnectionProj::H1(h1_conn) => h1_conn.graceful_shutdown(),
-            WrappedHyperConnectionProj::H2(h2_conn) => h2_conn.graceful_shutdown(),
+            HyperH1OrH2ConnectionProj::H1(h1_conn) => h1_conn.graceful_shutdown(),
+            HyperH1OrH2ConnectionProj::H2(h2_conn) => h2_conn.graceful_shutdown(),
         }
     }
 }
