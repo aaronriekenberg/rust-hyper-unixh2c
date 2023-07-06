@@ -144,8 +144,11 @@ where
 enum WrappedHyperConnection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
-    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    S: hyper::service::HttpService<
+        hyper::body::Incoming,
+        ResBody = ResponseBody,
+        Error = Infallible,
+    >,
     E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
 {
     H1(#[pin] hyper::server::conn::http1::Connection<I, S>),
@@ -155,8 +158,11 @@ where
 impl<I, S, E> std::future::Future for WrappedHyperConnection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
-    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    S: hyper::service::HttpService<
+        hyper::body::Incoming,
+        ResBody = ResponseBody,
+        Error = Infallible,
+    >,
     E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
 {
     type Output = hyper::Result<()>;
@@ -175,8 +181,11 @@ where
 impl<I, S, E> WrappedHyperConnection<I, S, E>
 where
     I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
-    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    S: hyper::service::HttpService<
+        hyper::body::Incoming,
+        ResBody = ResponseBody,
+        Error = Infallible,
+    >,
     E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
 {
     pub fn graceful_shutdown(self: Pin<&mut Self>) {
