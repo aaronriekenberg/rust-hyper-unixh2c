@@ -1,7 +1,7 @@
 use hyper::{
     http::{Request, Response},
-    server::conn::http1::Builder as HyperHTTP1Builder,
-    server::conn::http2::Builder as HyperHTTP2Builder,
+    server::conn::http1::{Builder as HyperHTTP1Builder, Connection as HyperHTTP1Connection},
+    server::conn::http2::{Builder as HyperHTTP2Builder, Connection as HyperHTTP2Connection},
     service::service_fn,
 };
 
@@ -143,8 +143,8 @@ where
     >,
     E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
 {
-    H1(#[pin] hyper::server::conn::http1::Connection<I, S>),
-    H2(#[pin] hyper::server::conn::http2::Connection<I, S, E>),
+    H1(#[pin] HyperHTTP1Connection<I, S>),
+    H2(#[pin] HyperHTTP2Connection<I, S, E>),
 }
 
 impl<I, S, E> std::future::Future for WrappedHyperConnection<I, S, E>
