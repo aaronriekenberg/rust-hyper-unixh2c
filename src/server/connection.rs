@@ -5,14 +5,16 @@ use hyper::{
     service::service_fn,
 };
 
+use hyper_util::rt::TokioExecutor;
+
+use pin_project::pin_project;
+
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     time::Duration,
 };
 
 use tracing::{debug, info, instrument, warn, Instrument};
-
-use pin_project::pin_project;
 
 use std::{convert::Infallible, pin::Pin, sync::Arc};
 
@@ -28,6 +30,7 @@ pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
     connection_timeout_durations: Vec<Duration>,
+    tokio_executor: TokioExecutor,
 }
 
 impl ConnectionHandler {
@@ -51,6 +54,7 @@ impl ConnectionHandler {
             request_handler,
             request_id_factory,
             connection_timeout_durations,
+            tokio_executor: TokioExecutor::new(),
         })
     }
 
@@ -99,7 +103,8 @@ impl ConnectionHandler {
                 WrappedHyperConnection::H1(conn)
             }
             ServerProtocol::Http2 => {
-                let conn = HyperHTTP2Builder::new(TokioExecutor).serve_connection(stream, service);
+                let conn = HyperHTTP2Builder::new(self.tokio_executor.clone())
+                    .serve_connection(stream, service);
                 WrappedHyperConnection::H2(conn)
             }
         };
@@ -124,19 +129,6 @@ impl ConnectionHandler {
         }
 
         info!("end handle_connection");
-    }
-}
-
-#[derive(Clone)]
-struct TokioExecutor;
-
-impl<F> hyper::rt::Executor<F> for TokioExecutor
-where
-    F: std::future::Future + Send + 'static,
-    F::Output: Send + 'static,
-{
-    fn execute(&self, fut: F) {
-        tokio::task::spawn(fut);
     }
 }
 
