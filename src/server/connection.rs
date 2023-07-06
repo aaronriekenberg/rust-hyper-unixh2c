@@ -12,6 +12,8 @@ use tokio::{
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
+use pin_project::pin_project;
+
 use std::{convert::Infallible, pin::Pin, sync::Arc};
 
 use crate::{
@@ -81,88 +83,47 @@ impl ConnectionHandler {
     ) {
         info!("begin handle_connection");
 
-        match connection.server_protocol() {
-            ServerProtocol::Http1 => self.handle_h1_connection(stream, connection).await,
-            ServerProtocol::Http2 => self.handle_h2_connection(stream, connection).await,
+        let service = service_fn(|hyper_request| {
+            connection.increment_num_requests();
+
+            let request_id = self.request_id_factory.new_request_id();
+
+            Arc::clone(&self)
+                .handle_request(connection.id(), request_id, hyper_request)
+                .in_current_span()
+        });
+
+        let mut wrapped_conn = match connection.server_protocol() {
+            ServerProtocol::Http1 => {
+                let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
+                WrappedHyperConnection::H1(conn)
+            }
+            ServerProtocol::Http2 => {
+                let conn = HyperHTTP2Builder::new(TokioExecutor).serve_connection(stream, service);
+                WrappedHyperConnection::H2(conn)
+            }
         };
 
+        let mut wrapped_conn = Pin::new(&mut wrapped_conn);
+
+        for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
+            debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
+            tokio::select! {
+                res = wrapped_conn.as_mut() => {
+                    match res {
+                        Ok(()) => debug!("after polling conn, no error"),
+                        Err(e) =>  warn!("error serving connection: {:?}", e),
+                    };
+                    break;
+                }
+                _ = tokio::time::sleep(*sleep_duration) => {
+                    info!("iter = {} got timeout_interval, calling conn.graceful_shutdown", iter);
+                    wrapped_conn.as_mut().graceful_shutdown();
+                }
+            }
+        }
+
         info!("end handle_connection");
-    }
-
-    async fn handle_h1_connection(
-        self: Arc<Self>,
-        stream: impl AsyncRead + AsyncWrite + Unpin + 'static,
-        connection: ConnectionGuard,
-    ) {
-        let service = service_fn(|hyper_request| {
-            connection.increment_num_requests();
-
-            let request_id = self.request_id_factory.new_request_id();
-
-            Arc::clone(&self)
-                .handle_request(connection.id(), request_id, hyper_request)
-                .in_current_span()
-        });
-
-        debug!("serving HTTP1 connection");
-        let mut conn = HyperHTTP1Builder::new().serve_connection(stream, service);
-
-        let mut conn = Pin::new(&mut conn);
-
-        for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
-            debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
-            tokio::select! {
-                res = conn.as_mut() => {
-                    match res {
-                        Ok(()) => debug!("after polling conn, no error"),
-                        Err(e) =>  warn!("error serving connection: {:?}", e),
-                    };
-                    break;
-                }
-                _ = tokio::time::sleep(*sleep_duration) => {
-                    info!("iter = {} got timeout_interval, calling conn.graceful_shutdown", iter);
-                    conn.as_mut().graceful_shutdown();
-                }
-            }
-        }
-    }
-
-    async fn handle_h2_connection(
-        self: Arc<Self>,
-        stream: impl AsyncRead + AsyncWrite + Unpin + 'static,
-        connection: ConnectionGuard,
-    ) {
-        let service = service_fn(|hyper_request| {
-            connection.increment_num_requests();
-
-            let request_id = self.request_id_factory.new_request_id();
-
-            Arc::clone(&self)
-                .handle_request(connection.id(), request_id, hyper_request)
-                .in_current_span()
-        });
-
-        debug!("serving HTTP2 connection");
-        let mut conn = HyperHTTP2Builder::new(TokioExecutor).serve_connection(stream, service);
-
-        let mut conn = Pin::new(&mut conn);
-
-        for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
-            debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
-            tokio::select! {
-                res = conn.as_mut() => {
-                    match res {
-                        Ok(()) => debug!("after polling conn, no error"),
-                        Err(e) =>  warn!("error serving connection: {:?}", e),
-                    };
-                    break;
-                }
-                _ = tokio::time::sleep(*sleep_duration) => {
-                    info!("iter = {} got timeout_interval, calling conn.graceful_shutdown", iter);
-                    conn.as_mut().graceful_shutdown();
-                }
-            }
-        }
     }
 }
 
@@ -176,5 +137,52 @@ where
 {
     fn execute(&self, fut: F) {
         tokio::task::spawn(fut);
+    }
+}
+
+#[pin_project(project = WrappedHyperConnectionProj)]
+enum WrappedHyperConnection<I, S, E>
+where
+    I: AsyncRead + AsyncWrite + Unpin + 'static,
+    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
+    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+{
+    H1(#[pin] hyper::server::conn::http1::Connection<I, S>),
+    H2(#[pin] hyper::server::conn::http2::Connection<I, S, E>),
+}
+
+impl<I, S, E> std::future::Future for WrappedHyperConnection<I, S, E>
+where
+    I: AsyncRead + AsyncWrite + Unpin + 'static,
+    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
+    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+{
+    type Output = hyper::Result<()>;
+
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        match self.project() {
+            WrappedHyperConnectionProj::H1(h1_conn) => h1_conn.poll(cx),
+            WrappedHyperConnectionProj::H2(h2_conn) => h2_conn.poll(cx),
+        }
+    }
+}
+
+impl<I, S, E> WrappedHyperConnection<I, S, E>
+where
+    I: AsyncRead + AsyncWrite + Unpin + 'static,
+    S: hyper::service::HttpService<hyper::body::Incoming, ResBody = ResponseBody>,
+    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+{
+    pub fn graceful_shutdown(self: Pin<&mut Self>) {
+        match self.project() {
+            WrappedHyperConnectionProj::H1(h1_conn) => h1_conn.graceful_shutdown(),
+            WrappedHyperConnectionProj::H2(h2_conn) => h2_conn.graceful_shutdown(),
+        }
     }
 }

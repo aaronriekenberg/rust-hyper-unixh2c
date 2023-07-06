@@ -16,10 +16,11 @@ humantime-serde = "1"
 http-body-util = "0.1.0-rc.2"
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 hyper-staticfile = "0.10.0-alpha.6"
-tokio = { version = "1", features = ["full"] }
+pin-project = "1.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
+tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["default", "env-filter"] }
 
