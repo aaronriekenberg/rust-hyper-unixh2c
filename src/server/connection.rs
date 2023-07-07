@@ -11,6 +11,7 @@ use pin_project::pin_project;
 
 use tokio::{
     io::{AsyncRead, AsyncWrite},
+    pin,
     time::Duration,
 };
 
@@ -97,7 +98,7 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        let mut wrapped_conn = match connection.server_protocol() {
+        let hyper_conn = match connection.server_protocol() {
             ServerProtocol::Http1 => {
                 let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
                 HyperH1OrH2Connection::H1(conn)
@@ -108,13 +109,12 @@ impl ConnectionHandler {
                 HyperH1OrH2Connection::H2(conn)
             }
         };
-
-        let mut wrapped_conn = Pin::new(&mut wrapped_conn);
+        pin!(hyper_conn);
 
         for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {
             debug!("iter = {} sleep_duration = {:?}", iter, sleep_duration);
             tokio::select! {
-                res = wrapped_conn.as_mut() => {
+                res = hyper_conn.as_mut() => {
                     match res {
                         Ok(()) => debug!("after polling conn, no error"),
                         Err(e) =>  warn!("error serving connection: {:?}", e),
@@ -123,7 +123,7 @@ impl ConnectionHandler {
                 }
                 _ = tokio::time::sleep(*sleep_duration) => {
                     info!("iter = {} got timeout_interval, calling conn.graceful_shutdown", iter);
-                    wrapped_conn.as_mut().graceful_shutdown();
+                    hyper_conn.as_mut().graceful_shutdown();
                 }
             }
         }
