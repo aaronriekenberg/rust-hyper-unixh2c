@@ -87,8 +87,13 @@ impl ConnectionGuard {
             num_requests,
         }
     }
+
     pub fn increment_num_requests(&self) {
         self.num_requests.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn num_requests(&self) -> usize {
+        self.num_requests.load(Ordering::Relaxed)
     }
 }
 

@@ -128,7 +128,10 @@ impl ConnectionHandler {
             }
         }
 
-        info!("end handle_connection");
+        info!(
+            "end handle_connection num_requests = {}",
+            connection.num_requests()
+        );
     }
 }
 
