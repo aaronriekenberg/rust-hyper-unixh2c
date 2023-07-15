@@ -7,8 +7,6 @@ use hyper::{
 
 use pin_project::pin_project;
 
-use tokio::pin;
-
 use std::pin::Pin;
 
 use crate::{
