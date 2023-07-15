@@ -1,5 +1,5 @@
-mod connection;
 mod h1h2conn;
+mod handler;
 mod tcp;
 mod unix;
 
@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use crate::{config::ServerSocketType, handlers::RequestHandler, request::RequestIDFactory};
 
-use self::{connection::ConnectionHandler, tcp::TCPServer, unix::UnixServer};
+use self::{handler::ConnectionHandler, tcp::TCPServer, unix::UnixServer};
 
 pub struct Server {
     join_set: JoinSet<anyhow::Result<()>>,
