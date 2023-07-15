@@ -17,7 +17,7 @@ RELEASE_VERSION_WITHOUT_V=$(echo $RELEASE_VERSION | sed -e 's/^v//g')
 echo "RELEASE_VERSION=$RELEASE_VERSION"
 echo "RELEASE_VERSION_WITHOUT_V=$RELEASE_VERSION_WITHOUT_V"
 
-cd ~/rust-hyper-server
+cd ~/vscode/rust-hyper-server
 
 toml set Cargo.toml package.version $RELEASE_VERSION_WITHOUT_V > Cargo.toml.tmp
 
