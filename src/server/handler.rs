@@ -5,13 +5,9 @@ use hyper::{
     service::service_fn,
 };
 
-use hyper_util::{rt::TokioExecutor, rt::TokioIo};
+use hyper_util::rt::TokioExecutor;
 
-use tokio::{
-    io::{AsyncRead, AsyncWrite},
-    pin,
-    time::Duration,
-};
+use tokio::{pin, time::Duration};
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
@@ -23,7 +19,7 @@ use crate::{
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
-    server::h1h2conn::HyperH1OrH2Connection,
+    server::{h1h2conn::HyperH1OrH2Connection, utils::HyperReadWrite},
 };
 
 pub struct ConnectionHandler {
@@ -82,7 +78,7 @@ impl ConnectionHandler {
     ))]
     pub async fn handle_connection(
         self: Arc<Self>,
-        stream: impl AsyncRead + AsyncWrite + Unpin + 'static,
+        stream: impl HyperReadWrite,
         connection: ConnectionGuard,
     ) {
         info!("begin handle_connection");
@@ -96,8 +92,6 @@ impl ConnectionHandler {
                 .handle_request(connection.id(), request_id, hyper_request)
                 .in_current_span()
         });
-
-        let stream = TokioIo::new(stream);
 
         let hyper_conn = match connection.server_protocol() {
             ServerProtocol::Http1 => {

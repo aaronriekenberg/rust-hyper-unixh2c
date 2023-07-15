@@ -1,45 +1,37 @@
 use hyper::{
-    server::conn::http1::Connection as HyperHTTP1Connection,
-    server::conn::http2::Connection as HyperHTTP2Connection,
+    rt::bounds::Http2ConnExec,
+    server::conn::{
+        http1::Connection as HyperHTTP1Connection, http2::Connection as HyperHTTP2Connection,
+    },
 };
-
-use hyper_util::rt::TokioIo;
 
 use pin_project::pin_project;
 
-use tokio::{
-    io::{AsyncRead, AsyncWrite},
-    pin,
+use tokio::pin;
+
+use std::pin::Pin;
+
+use crate::{
+    response::ResponseBody,
+    server::utils::{HyperHttpService, HyperReadWrite},
 };
-
-use std::{convert::Infallible, pin::Pin};
-
-use crate::response::ResponseBody;
 
 #[pin_project(project = HyperH1OrH2ConnectionProj)]
 pub enum HyperH1OrH2Connection<I, S, E>
 where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+    I: HyperReadWrite,
+    S: HyperHttpService,
+    E: Http2ConnExec<S::Future, ResponseBody>,
 {
-    H1(#[pin] HyperHTTP1Connection<TokioIo<I>, S>),
-    H2(#[pin] HyperHTTP2Connection<TokioIo<I>, S, E>),
+    H1(#[pin] HyperHTTP1Connection<I, S>),
+    H2(#[pin] HyperHTTP2Connection<I, S, E>),
 }
 
 impl<I, S, E> std::future::Future for HyperH1OrH2Connection<I, S, E>
 where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+    I: HyperReadWrite,
+    S: HyperHttpService,
+    E: Http2ConnExec<S::Future, ResponseBody>,
 {
     type Output = hyper::Result<()>;
 
@@ -56,13 +48,9 @@ where
 
 impl<I, S, E> HyperH1OrH2Connection<I, S, E>
 where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
+    I: HyperReadWrite,
+    S: HyperHttpService,
+    E: Http2ConnExec<S::Future, ResponseBody>,
 {
     pub fn graceful_shutdown(self: Pin<&mut Self>) {
         match self.project() {

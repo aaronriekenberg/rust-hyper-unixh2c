@@ -2,6 +2,7 @@ mod h1h2conn;
 mod handler;
 mod tcp;
 mod unix;
+mod utils;
 
 use anyhow::Context;
 

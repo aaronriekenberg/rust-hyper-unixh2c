@@ -1,5 +1,7 @@
 use anyhow::Context;
 
+use hyper_util::rt::TokioIo;
+
 use tracing::{debug, info};
 
 use tokio::net::UnixListener;
@@ -56,7 +58,8 @@ impl UnixServer {
                 .await
             {
                 tokio::task::spawn(
-                    Arc::clone(&self.connection_handler).handle_connection(unix_stream, connection),
+                    Arc::clone(&self.connection_handler)
+                        .handle_connection(TokioIo::new(unix_stream), connection),
                 );
             }
         }

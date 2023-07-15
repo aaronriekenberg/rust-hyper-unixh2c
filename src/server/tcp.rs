@@ -1,5 +1,7 @@
 use anyhow::Context;
 
+use hyper_util::rt::TokioIo;
+
 use tracing::{info, warn};
 
 use tokio::net::TcpListener;
@@ -58,7 +60,8 @@ impl TCPServer {
                 .await
             {
                 tokio::task::spawn(
-                    Arc::clone(&self.connection_handler).handle_connection(tcp_stream, connection),
+                    Arc::clone(&self.connection_handler)
+                        .handle_connection(TokioIo::new(tcp_stream), connection),
                 );
             }
         }
