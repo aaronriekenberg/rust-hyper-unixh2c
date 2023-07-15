@@ -59,10 +59,8 @@ impl TCPServer {
                 )
                 .await
             {
-                tokio::task::spawn(
-                    Arc::clone(&self.connection_handler)
-                        .handle_connection(TokioIo::new(tcp_stream), connection),
-                );
+                self.connection_handler
+                    .start_connection_handler(TokioIo::new(tcp_stream), connection);
             }
         }
     }

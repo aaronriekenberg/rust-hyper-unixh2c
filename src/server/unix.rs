@@ -57,10 +57,8 @@ impl UnixServer {
                 )
                 .await
             {
-                tokio::task::spawn(
-                    Arc::clone(&self.connection_handler)
-                        .handle_connection(TokioIo::new(unix_stream), connection),
-                );
+                self.connection_handler
+                    .start_connection_handler(TokioIo::new(unix_stream), connection);
             }
         }
     }

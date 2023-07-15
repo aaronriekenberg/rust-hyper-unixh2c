@@ -4,9 +4,9 @@ use std::convert::Infallible;
 
 use crate::response::ResponseBody;
 
-pub trait HyperReadWrite: hyper::rt::Read + hyper::rt::Write + Unpin + 'static {}
+pub trait HyperReadWrite: hyper::rt::Read + hyper::rt::Write + Send + Unpin + 'static {}
 
-impl<T> HyperReadWrite for T where T: hyper::rt::Read + hyper::rt::Write + Unpin + 'static {}
+impl<T> HyperReadWrite for T where T: hyper::rt::Read + hyper::rt::Write + Send + Unpin + 'static {}
 
 pub trait HyperHttpService:
     HttpService<hyper::body::Incoming, ResBody = ResponseBody, Error = Infallible>

@@ -76,7 +76,7 @@ impl ConnectionHandler {
         sock = ?connection.server_socket_type(),
         proto = ?connection.server_protocol(),
     ))]
-    pub async fn handle_connection(
+    async fn handle_connection(
         self: Arc<Self>,
         stream: impl HyperReadWrite,
         connection: ConnectionGuard,
@@ -127,5 +127,13 @@ impl ConnectionHandler {
             "end handle_connection num_requests = {}",
             connection.num_requests()
         );
+    }
+
+    pub fn start_connection_handler(
+        self: &Arc<Self>,
+        stream: impl HyperReadWrite,
+        connection: ConnectionGuard,
+    ) {
+        tokio::spawn(Arc::clone(self).handle_connection(stream, connection));
     }
 }
