@@ -1,13 +1,11 @@
 use hyper::{
     http::{Request, Response},
-    server::conn::http1::{Builder as HyperHTTP1Builder, Connection as HyperHTTP1Connection},
-    server::conn::http2::{Builder as HyperHTTP2Builder, Connection as HyperHTTP2Connection},
+    server::conn::http1::Builder as HyperHTTP1Builder,
+    server::conn::http2::Builder as HyperHTTP2Builder,
     service::service_fn,
 };
 
 use hyper_util::{rt::TokioExecutor, rt::TokioIo};
-
-use pin_project::pin_project;
 
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -17,7 +15,7 @@ use tokio::{
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
-use std::{convert::Infallible, pin::Pin, sync::Arc};
+use std::{convert::Infallible, sync::Arc};
 
 use crate::{
     config::ServerProtocol,
@@ -25,6 +23,7 @@ use crate::{
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
+    server::h1h2conn::HyperH1OrH2Connection,
 };
 
 pub struct ConnectionHandler {
@@ -98,14 +97,16 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
+        let stream = TokioIo::new(stream);
+
         let hyper_conn = match connection.server_protocol() {
             ServerProtocol::Http1 => {
-                let conn = HyperHTTP1Builder::new().serve_connection(TokioIo::new(stream), service);
+                let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
                 HyperH1OrH2Connection::H1(conn)
             }
             ServerProtocol::Http2 => {
                 let conn = HyperHTTP2Builder::new(self.tokio_executor.clone())
-                    .serve_connection(TokioIo::new(stream), service);
+                    .serve_connection(stream, service);
                 HyperH1OrH2Connection::H2(conn)
             }
         };
@@ -132,61 +133,5 @@ impl ConnectionHandler {
             "end handle_connection num_requests = {}",
             connection.num_requests()
         );
-    }
-}
-
-#[pin_project(project = HyperH1OrH2ConnectionProj)]
-enum HyperH1OrH2Connection<I, S, E>
-where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
-{
-    H1(#[pin] HyperHTTP1Connection<TokioIo<I>, S>),
-    H2(#[pin] HyperHTTP2Connection<TokioIo<I>, S, E>),
-}
-
-impl<I, S, E> std::future::Future for HyperH1OrH2Connection<I, S, E>
-where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
-{
-    type Output = hyper::Result<()>;
-
-    fn poll(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
-        match self.project() {
-            HyperH1OrH2ConnectionProj::H1(h1_conn) => h1_conn.poll(cx),
-            HyperH1OrH2ConnectionProj::H2(h2_conn) => h2_conn.poll(cx),
-        }
-    }
-}
-
-impl<I, S, E> HyperH1OrH2Connection<I, S, E>
-where
-    I: AsyncRead + AsyncWrite + Unpin + 'static,
-    S: hyper::service::HttpService<
-        hyper::body::Incoming,
-        ResBody = ResponseBody,
-        Error = Infallible,
-    >,
-    E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
-{
-    pub fn graceful_shutdown(self: Pin<&mut Self>) {
-        match self.project() {
-            HyperH1OrH2ConnectionProj::H1(h1_conn) => h1_conn.graceful_shutdown(),
-            HyperH1OrH2ConnectionProj::H2(h2_conn) => h2_conn.graceful_shutdown(),
-        }
     }
 }

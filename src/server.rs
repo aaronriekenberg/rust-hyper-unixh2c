@@ -1,4 +1,5 @@
 mod connection;
+mod h1h2conn;
 mod tcp;
 mod unix;
 
