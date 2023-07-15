@@ -5,7 +5,7 @@ use hyper::{
     service::service_fn,
 };
 
-use hyper_util::rt::TokioExecutor;
+use hyper_util::{rt::TokioExecutor, rt::TokioIo};
 
 use pin_project::pin_project;
 
@@ -100,12 +100,12 @@ impl ConnectionHandler {
 
         let hyper_conn = match connection.server_protocol() {
             ServerProtocol::Http1 => {
-                let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
+                let conn = HyperHTTP1Builder::new().serve_connection(TokioIo::new(stream), service);
                 HyperH1OrH2Connection::H1(conn)
             }
             ServerProtocol::Http2 => {
                 let conn = HyperHTTP2Builder::new(self.tokio_executor.clone())
-                    .serve_connection(stream, service);
+                    .serve_connection(TokioIo::new(stream), service);
                 HyperH1OrH2Connection::H2(conn)
             }
         };
@@ -146,8 +146,8 @@ where
     >,
     E: hyper::rt::bounds::Http2ConnExec<S::Future, ResponseBody>,
 {
-    H1(#[pin] HyperHTTP1Connection<I, S>),
-    H2(#[pin] HyperHTTP2Connection<I, S, E>),
+    H1(#[pin] HyperHTTP1Connection<TokioIo<I>, S>),
+    H2(#[pin] HyperHTTP2Connection<TokioIo<I>, S, E>),
 }
 
 impl<I, S, E> std::future::Future for HyperH1OrH2Connection<I, S, E>
