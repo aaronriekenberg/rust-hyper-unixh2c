@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "rust-hyper-server"
-version = "0.0.88"
+version = "0.0.89"
 dependencies = [
  "anyhow",
  "async-trait",
