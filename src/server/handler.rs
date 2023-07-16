@@ -54,7 +54,11 @@ impl ConnectionHandler {
         })
     }
 
-    #[instrument(skip_all, fields(req_id = request_id.as_usize()))]
+    #[instrument(skip_all, fields(
+        req_id = request_id.as_usize(),
+        method = %hyper_request.method(),
+        uri = %hyper_request.uri(),
+    ))]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
