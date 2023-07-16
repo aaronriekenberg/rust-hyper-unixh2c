@@ -44,7 +44,7 @@
         ]
     },
     "static_file_configuration": {
-        "path": "/Users/aaron/aaronr.digital",
+        "path": "/Users/aaron/vscode/aaronr.digital",
         "precompressed_br": false,
         "precompressed_gz": false
     }
