@@ -1,6 +1,6 @@
 {
     "context_configuration": {
-        "dynamic_route_context": "/cgi-bin"
+        "dynamic_route_context": "/api/v1"
     },
     "server_configuration": {
         "listeners": [
