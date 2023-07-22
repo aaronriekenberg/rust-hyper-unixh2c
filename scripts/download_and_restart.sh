@@ -5,11 +5,14 @@ systemctl --user stop rust-hyper-server.service
 
 DONE=false
 
+PROJECT_PATH=$(realpath $(dirname $0)/..)
+echo "PROJECT_PATH = $PROJECT_PATH"
+
 while [ $DONE = "false" ] ; do
 
   echo "begin loop $(date)"
 
-  cd ~/rust-hyper-server
+  cd $PROJECT_PATH
 
   git pull -v
 
