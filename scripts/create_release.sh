@@ -5,6 +5,9 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
+PROJECT_PATH=$(realpath $(dirname $0)/..)
+echo "PROJECT_PATH = $PROJECT_PATH"
+
 RELEASE_VERSION=$1
 
 if [[ $RELEASE_VERSION != v* ]]; then
@@ -17,7 +20,7 @@ RELEASE_VERSION_WITHOUT_V=$(echo $RELEASE_VERSION | sed -e 's/^v//g')
 echo "RELEASE_VERSION=$RELEASE_VERSION"
 echo "RELEASE_VERSION_WITHOUT_V=$RELEASE_VERSION_WITHOUT_V"
 
-cd ~/vscode/rust-hyper-server
+cd $PROJECT_PATH
 
 toml set Cargo.toml package.version $RELEASE_VERSION_WITHOUT_V > Cargo.toml.tmp
 
