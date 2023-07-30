@@ -55,7 +55,7 @@ impl ConnectionHandler {
     }
 
     #[instrument(skip_all, fields(
-        req_id = request_id.as_usize(),
+        id = request_id.as_usize(),
         method = %hyper_request.method(),
         uri = %hyper_request.uri(),
     ))]
@@ -76,7 +76,7 @@ impl ConnectionHandler {
     }
 
     #[instrument(skip_all, fields(
-        conn_id = connection.id().as_usize(),
+        id = connection.id().as_usize(),
         sock = ?connection.server_socket_type(),
         proto = ?connection.server_protocol(),
     ))]

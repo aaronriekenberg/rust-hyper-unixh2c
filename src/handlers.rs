@@ -1,6 +1,7 @@
 mod commands;
 mod connection_info;
 mod request_info;
+mod response_logger;
 mod route;
 mod static_file;
 mod utils;
@@ -30,5 +31,9 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     let default_route = static_file::create_default_route().await;
 
-    Ok(Box::new(route::Router::new(routes, default_route)?))
+    let router = Box::new(route::Router::new(routes, default_route)?);
+
+    let response_logger = Box::new(response_logger::ResponseLogger::new(router));
+
+    Ok(response_logger)
 }
