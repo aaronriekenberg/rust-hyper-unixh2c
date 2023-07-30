@@ -54,11 +54,15 @@ impl ConnectionHandler {
         })
     }
 
-    #[instrument(skip_all, fields(
-        id = request_id.as_usize(),
-        method = %hyper_request.method(),
-        uri = %hyper_request.uri(),
-    ))]
+    #[instrument(
+        name = "request",
+        skip_all,
+        fields(
+            id = request_id.as_usize(),
+            method = %hyper_request.method(),
+            uri = %hyper_request.uri(),
+        )
+    )]
     async fn handle_request(
         self: Arc<Self>,
         connection_id: ConnectionID,
@@ -75,11 +79,15 @@ impl ConnectionHandler {
         Ok(result)
     }
 
-    #[instrument(skip_all, fields(
-        id = connection.id().as_usize(),
-        sock = ?connection.server_socket_type(),
-        proto = ?connection.server_protocol(),
-    ))]
+    #[instrument(
+        name = "conn",
+        skip_all,
+        fields(
+            id = connection.id().as_usize(),
+            sock = ?connection.server_socket_type(),
+            proto = ?connection.server_protocol(),
+        )
+    )]
     async fn handle_connection(
         self: Arc<Self>,
         stream: impl HyperReadWrite,
