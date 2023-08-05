@@ -12,7 +12,7 @@ mod version;
 
 use anyhow::Context;
 
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 async fn log_version_info() {
     info!("Version Info:");
@@ -25,6 +25,7 @@ fn app_name() -> String {
     std::env::args().next().unwrap_or("[UNKNOWN]".to_owned())
 }
 
+#[instrument]
 async fn try_main() -> anyhow::Result<()> {
     log_version_info().await;
 
@@ -45,6 +46,7 @@ async fn try_main() -> anyhow::Result<()> {
 
     server.run().await
 }
+
 fn initialize_tracing_subscriber() {
     use tracing_subscriber::{filter::LevelFilter, fmt, prelude::*, EnvFilter};
 
