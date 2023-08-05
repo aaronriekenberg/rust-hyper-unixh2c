@@ -8,6 +8,7 @@ WorkingDirectory=%h/rust-hyper-server
 ExecStart=%h/rust-hyper-server/target/release/rust-hyper-server ./config/config.json
 Restart=always
 Environment=RUST_LOG=info
+Environment=LOG_FORMAT=prod
 UMask=007
 
 [Install]
