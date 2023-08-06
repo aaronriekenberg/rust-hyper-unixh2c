@@ -2,7 +2,7 @@ use anyhow::Context;
 
 use getset::{CopyGetters, Getters};
 
-use tracing::info;
+use tracing::debug;
 
 use serde::{Deserialize, Serialize};
 
@@ -108,7 +108,7 @@ pub struct Configuration {
 static CONFIGURATION_INSTANCE: OnceCell<Configuration> = OnceCell::const_new();
 
 pub async fn read_configuration(config_file: String) -> anyhow::Result<()> {
-    info!("reading '{}'", config_file);
+    debug!("reading '{}'", config_file);
 
     let mut file = File::open(&config_file)
         .await
@@ -123,7 +123,7 @@ pub async fn read_configuration(config_file: String) -> anyhow::Result<()> {
     let configuration: Configuration = ::serde_json::from_slice(&file_contents)
         .with_context(|| format!("error unmarshalling '{}'", config_file))?;
 
-    info!("configuration\n{:#?}", configuration);
+    debug!("configuration\n{:#?}", configuration);
 
     CONFIGURATION_INSTANCE
         .set(configuration)
