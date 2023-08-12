@@ -7,7 +7,6 @@ mod handlers;
 mod request;
 mod response;
 mod server;
-mod time;
 mod tracing_config;
 mod version;
 

@@ -6,7 +6,8 @@ use std::path::PathBuf;
 
 use crate::{
     handlers::{
-        route::RouteInfo, utils::build_json_response, HttpRequest, RequestHandler, ResponseBody,
+        response_utils::build_json_response, route::RouteInfo, HttpRequest, RequestHandler,
+        ResponseBody,
     },
     response::CacheControl,
     version::get_verison_info,

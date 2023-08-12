@@ -13,7 +13,9 @@ use std::{path::Path, time::SystemTime};
 use tokio::time::Duration;
 
 use crate::{
-    handlers::{utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody},
+    handlers::{
+        response_utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody,
+    },
     response::CacheControl,
 };
 
