@@ -53,6 +53,22 @@ impl StaticFileHandler {
         build_premanent_redirect_response(self.client_error_page_path, CacheControl::NoCache)
     }
 
+    fn handle_resolve_errors(
+        &self,
+        resolve_result: &ResolveResult,
+    ) -> Option<Response<ResponseBody>> {
+        if matches!(
+            resolve_result,
+            ResolveResult::MethodNotMatched
+                | ResolveResult::NotFound
+                | ResolveResult::PermissionDenied
+        ) {
+            Some(self.build_client_error_page_response())
+        } else {
+            None
+        }
+    }
+
     fn block_dot_paths(&self, resolve_result: &ResolveResult) -> Option<Response<ResponseBody>> {
         let str_path_option = match resolve_result {
             ResolveResult::Found(resolved_file) => resolved_file.path.to_str(),
@@ -126,13 +142,8 @@ impl RequestHandler for StaticFileHandler {
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if matches!(
-            resolve_result,
-            ResolveResult::MethodNotMatched
-                | ResolveResult::NotFound
-                | ResolveResult::PermissionDenied
-        ) {
-            return self.build_client_error_page_response();
+        if let Some(response) = self.handle_resolve_errors(&resolve_result) {
+            return response;
         }
 
         if let Some(response) = self.block_dot_paths(&resolve_result) {
