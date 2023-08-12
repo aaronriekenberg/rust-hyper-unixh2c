@@ -122,6 +122,7 @@
     "static_file_configuration": {
         "path": "/home/aaron/aaronr.digital",
         "precompressed_br": false,
-        "precompressed_gz": true
+        "precompressed_gz": true,
+        "client_error_page_path": "/notfound.html"
     }
 }

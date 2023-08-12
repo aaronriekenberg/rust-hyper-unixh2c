@@ -14,7 +14,8 @@ use tokio::time::Duration;
 
 use crate::{
     handlers::{
-        response_utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody,
+        response_utils::{build_premanent_redirect_response, build_status_code_response},
+        HttpRequest, RequestHandler, ResponseBody,
     },
     response::CacheControl,
 };
@@ -25,6 +26,7 @@ const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
 
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
+    client_error_page_path: &'static str,
 }
 
 impl StaticFileHandler {
@@ -41,7 +43,14 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        Self { resolver }
+        Self {
+            resolver,
+            client_error_page_path: static_file_configuration.client_error_page_path(),
+        }
+    }
+
+    fn build_client_error_page_response(&self) -> Response<ResponseBody> {
+        build_premanent_redirect_response(self.client_error_page_path, CacheControl::NoCache)
     }
 
     fn block_dot_paths(&self, resolve_result: &ResolveResult) -> Option<Response<ResponseBody>> {
@@ -55,10 +64,7 @@ impl StaticFileHandler {
             debug!("str_path = {}", str_path);
             if str_path.starts_with('.') || str_path.contains("/.") {
                 warn!("blocking request for dot file path = {:?}", str_path);
-                return Some(build_status_code_response(
-                    StatusCode::FORBIDDEN,
-                    CacheControl::NoCache,
-                ));
+                return Some(self.build_client_error_page_response());
             }
         };
 
@@ -72,7 +78,9 @@ impl StaticFileHandler {
 
                 let str_path = resolved_file.path.to_str().unwrap_or_default();
 
-                if str_path.contains("vnstat/") && str_path.ends_with(".png") {
+                if !(str_path.contains("vnstat/") && str_path.ends_with(".png")) {
+                    Some(DEFAULT_CACHE_DURATION_SECONDS)
+                } else {
                     debug!("request for vnstat png file path");
 
                     match resolved_file.modified {
@@ -93,8 +101,6 @@ impl StaticFileHandler {
                             Some(cache_duration.as_secs().try_into().unwrap_or_default())
                         }
                     }
-                } else {
-                    Some(DEFAULT_CACHE_DURATION_SECONDS)
                 }
             }
             _ => None,
@@ -119,6 +125,15 @@ impl RequestHandler for StaticFileHandler {
         };
 
         debug!("resolve_result = {:?}", resolve_result);
+
+        if matches!(
+            resolve_result,
+            ResolveResult::MethodNotMatched
+                | ResolveResult::NotFound
+                | ResolveResult::PermissionDenied
+        ) {
+            return self.build_client_error_page_response();
+        }
 
         if let Some(response) = self.block_dot_paths(&resolve_result) {
             return response;

@@ -94,6 +94,9 @@ pub struct StaticFileConfiguration {
 
     #[getset(get_copy = "pub")]
     precompressed_gz: bool,
+
+    #[getset(get = "pub")]
+    client_error_page_path: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]

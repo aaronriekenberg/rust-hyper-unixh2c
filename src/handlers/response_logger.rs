@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use hyper::http::Response;
 
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use crate::handlers::{HttpRequest, RequestHandler, ResponseBody};
 
@@ -23,9 +23,10 @@ impl RequestHandler for ResponseLogger {
         if !response.status().is_success() {
             let status_code = response.status().as_u16();
 
-            if response.status().is_informational() || response.status().is_redirection() {
-                debug!("status_code = {}", status_code);
-            } else if response.status().is_client_error() {
+            if response.status().is_informational()
+                || response.status().is_redirection()
+                || response.status().is_client_error()
+            {
                 info!("status_code = {}", status_code);
             } else {
                 warn!("status_code = {}", status_code);

@@ -58,6 +58,18 @@ pub fn build_status_code_response(
         .unwrap()
 }
 
+pub fn build_premanent_redirect_response(
+    location: &str,
+    cache_control: CacheControl,
+) -> Response<ResponseBody> {
+    Response::builder()
+        .status(StatusCode::PERMANENT_REDIRECT)
+        .header(header::LOCATION, location)
+        .header(header::CACHE_CONTROL, cache_control.header_value())
+        .body(empty_response_body())
+        .unwrap()
+}
+
 pub fn empty_response_body() -> ResponseBody {
     Empty::new().map_err(|never| never.into()).boxed()
 }

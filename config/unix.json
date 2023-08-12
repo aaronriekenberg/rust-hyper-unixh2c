@@ -15,7 +15,7 @@
                 "bind_address": "[::]:8080"
             }
         ],
-        "connection_limit": 4,
+        "connection_limit": 100,
         "connection_max_lifetime": "2m",
         "connection_graceful_shutdown_timeout": "5s"
     },
@@ -46,6 +46,7 @@
     "static_file_configuration": {
         "path": "/Users/aaron/vscode/aaronr.digital",
         "precompressed_br": false,
-        "precompressed_gz": false
+        "precompressed_gz": false,
+        "client_error_page_path": "/notfound.html"
     }
 }
