@@ -57,15 +57,15 @@ impl StaticFileHandler {
         &self,
         resolve_result: &ResolveResult,
     ) -> Option<Response<ResponseBody>> {
-        if matches!(
-            resolve_result,
-            ResolveResult::MethodNotMatched
-                | ResolveResult::NotFound
-                | ResolveResult::PermissionDenied
-        ) {
-            Some(self.build_client_error_page_response())
-        } else {
-            None
+        match resolve_result {
+            ResolveResult::MethodNotMatched => Some(build_status_code_response(
+                StatusCode::BAD_REQUEST,
+                CacheControl::NoCache,
+            )),
+            ResolveResult::NotFound | ResolveResult::PermissionDenied => {
+                Some(self.build_client_error_page_response())
+            }
+            _ => None,
         }
     }
 
