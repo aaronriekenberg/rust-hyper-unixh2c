@@ -23,6 +23,8 @@ const DEFAULT_CACHE_DURATION_SECONDS: u32 = 60 * 60;
 
 const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
 
+const CLIENT_ERROR_CACHE_DURATION_SECONDS: u32 = 5 * 60;
+
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
@@ -49,11 +51,15 @@ impl StaticFileHandler {
     }
 
     async fn build_client_error_page_response(&self) -> Response<ResponseBody> {
-        let request = hyper::http::Request::get(self.client_error_page_path)
+        let client_error_page_request = hyper::http::Request::get(self.client_error_page_path)
             .body(())
             .unwrap();
 
-        let resolve_result = match self.resolver.resolve_request(&request).await {
+        let resolve_result = match self
+            .resolver
+            .resolve_request(&client_error_page_request)
+            .await
+        {
             Ok(resolve_result) => resolve_result,
             Err(e) => {
                 warn!(
@@ -68,8 +74,8 @@ impl StaticFileHandler {
         };
 
         let response = match hyper_staticfile::ResponseBuilder::new()
-            .request(&request)
-            .cache_headers(None)
+            .request(&client_error_page_request)
+            .cache_headers(Some(CLIENT_ERROR_CACHE_DURATION_SECONDS))
             .build(resolve_result)
         {
             Ok(response) => response,
