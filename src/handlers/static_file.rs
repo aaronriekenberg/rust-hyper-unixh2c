@@ -14,8 +14,7 @@ use tokio::time::Duration;
 
 use crate::{
     handlers::{
-        response_utils::{build_premanent_redirect_response, build_status_code_response},
-        HttpRequest, RequestHandler, ResponseBody,
+        response_utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody,
     },
     response::CacheControl,
 };
@@ -49,11 +48,52 @@ impl StaticFileHandler {
         }
     }
 
-    fn build_client_error_page_response(&self) -> Response<ResponseBody> {
-        build_premanent_redirect_response(self.client_error_page_path, CacheControl::NoCache)
+    async fn build_client_error_page_response(&self) -> Response<ResponseBody> {
+        let request = hyper::http::Request::get(self.client_error_page_path)
+            .body(())
+            .unwrap();
+
+        let resolve_result = match self.resolver.resolve_request(&request).await {
+            Ok(resolve_result) => resolve_result,
+            Err(e) => {
+                warn!(
+                    "build_client_error_page_response resolve_request error e = {}",
+                    e
+                );
+                return build_status_code_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    CacheControl::NoCache,
+                );
+            }
+        };
+
+        let response = match hyper_staticfile::ResponseBuilder::new()
+            .request(&request)
+            .cache_headers(None)
+            .build(resolve_result)
+        {
+            Ok(response) => response,
+            Err(e) => {
+                warn!(
+                    "build_client_error_page_response ResponseBuilder.build error e = {}",
+                    e
+                );
+                return build_status_code_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    CacheControl::NoCache,
+                );
+            }
+        };
+
+        let (mut parts, body) = response.into_parts();
+        parts.status = StatusCode::NOT_FOUND;
+
+        let boxed_body = body.map_err(|e| e.into()).boxed();
+
+        Response::from_parts(parts, boxed_body)
     }
 
-    fn handle_resolve_errors(
+    async fn handle_resolve_errors(
         &self,
         resolve_result: &ResolveResult,
     ) -> Option<Response<ResponseBody>> {
@@ -63,13 +103,16 @@ impl StaticFileHandler {
                 CacheControl::NoCache,
             )),
             ResolveResult::NotFound | ResolveResult::PermissionDenied => {
-                Some(self.build_client_error_page_response())
+                Some(self.build_client_error_page_response().await)
             }
             _ => None,
         }
     }
 
-    fn block_dot_paths(&self, resolve_result: &ResolveResult) -> Option<Response<ResponseBody>> {
+    async fn block_dot_paths(
+        &self,
+        resolve_result: &ResolveResult,
+    ) -> Option<Response<ResponseBody>> {
         let str_path_option = match resolve_result {
             ResolveResult::Found(resolved_file) => resolved_file.path.to_str(),
             ResolveResult::IsDirectory { redirect_to } => Some(redirect_to.as_str()),
@@ -80,7 +123,7 @@ impl StaticFileHandler {
             debug!("str_path = {}", str_path);
             if str_path.starts_with('.') || str_path.contains("/.") {
                 warn!("blocking request for dot file path = {:?}", str_path);
-                return Some(self.build_client_error_page_response());
+                return Some(self.build_client_error_page_response().await);
             }
         };
 
@@ -142,11 +185,11 @@ impl RequestHandler for StaticFileHandler {
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if let Some(response) = self.handle_resolve_errors(&resolve_result) {
+        if let Some(response) = self.handle_resolve_errors(&resolve_result).await {
             return response;
         }
 
-        if let Some(response) = self.block_dot_paths(&resolve_result) {
+        if let Some(response) = self.block_dot_paths(&resolve_result).await {
             return response;
         }
 
