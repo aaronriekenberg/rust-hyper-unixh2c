@@ -1,27 +1,20 @@
 #!/bin/bash -x
 
-
-systemctl --user stop rust-hyper-server.service
-
 DONE=false
 
 PROJECT_PATH=$(realpath $(dirname $0)/..)
 echo "PROJECT_PATH = $PROJECT_PATH"
 
+cd $PROJECT_PATH
+
 while [ $DONE = "false" ] ; do
 
   echo "begin loop $(date)"
-
-  cd $PROJECT_PATH
 
   git pull -v
 
   RELEASE=$(git describe --abbrev=0 --tags)
   echo "RELEASE=$RELEASE"
-
-  rm -fr target
-  mkdir -p target/release
-  cd target/release
 
   URL="https://github.com/aaronriekenberg/rust-hyper-server/releases/download/${RELEASE}/rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz"
 
@@ -37,6 +30,13 @@ while [ $DONE = "false" ] ; do
 
 done
 
+systemctl --user stop rust-hyper-server.service
+
+rm -fr target
+mkdir -p target/release
+cd target/release
+
+mv $PROJECT_PATH/rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz .
 tar xvf rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz
 
 sudo setcap cap_net_bind_service=+ep ./rust-hyper-server
