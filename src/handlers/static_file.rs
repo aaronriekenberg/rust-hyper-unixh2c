@@ -1,4 +1,3 @@
-use anyhow::Context;
 use async_trait::async_trait;
 
 use http_body_util::BodyExt;
@@ -26,6 +25,21 @@ const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
 
 const CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS: u32 = 5 * 60;
 
+#[derive(thiserror::Error, Debug)]
+enum StaticFileHandlerError {
+    #[error("client error page resolve error: {0}")]
+    ClientErrorPageResolveRequest(std::io::Error),
+
+    #[error("client error page build response error: {0}")]
+    ClientErrorPageBuildResponse(hyper::http::Error),
+
+    #[error("resolve error: {0}")]
+    ResolveRequest(std::io::Error),
+
+    #[error("build response error: {0}")]
+    BuildResponse(hyper::http::Error),
+}
+
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
@@ -51,7 +65,9 @@ impl StaticFileHandler {
         }
     }
 
-    async fn build_client_error_page_response(&self) -> anyhow::Result<Response<ResponseBody>> {
+    async fn build_client_error_page_response(
+        &self,
+    ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
         let client_error_page_request = hyper::http::Request::get(self.client_error_page_path)
             .body(())
             .unwrap();
@@ -60,13 +76,13 @@ impl StaticFileHandler {
             .resolver
             .resolve_request(&client_error_page_request)
             .await
-            .context("build_client_error_page_response: resolve_request error")?;
+            .map_err(StaticFileHandlerError::ClientErrorPageResolveRequest)?;
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
             .cache_headers(Some(CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS))
             .build(resolve_result)
-            .context("build_client_error_page_response: ResponseBuilder.build error")?;
+            .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 
         let (mut parts, body) = response.into_parts();
         parts.status = StatusCode::NOT_FOUND;
@@ -130,14 +146,17 @@ impl StaticFileHandler {
         }
     }
 
-    async fn try_handle(&self, request: &HttpRequest) -> anyhow::Result<Response<ResponseBody>> {
+    async fn try_handle(
+        &self,
+        request: &HttpRequest,
+    ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
         debug!("StaticFileHandler::try_handle request = {:?}", request);
 
         let resolve_result = self
             .resolver
             .resolve_request(request.hyper_request())
             .await
-            .context("try_handle: resolve_request error")?;
+            .map_err(StaticFileHandlerError::ResolveRequest)?;
 
         debug!("resolve_result = {:?}", resolve_result);
 
@@ -157,7 +176,7 @@ impl StaticFileHandler {
             .request(request.hyper_request())
             .cache_headers(cache_headers)
             .build(resolve_result)
-            .context("try_handle: resolve_request error")?;
+            .map_err(StaticFileHandlerError::BuildResponse)?;
 
         let (parts, body) = response.into_parts();
 
