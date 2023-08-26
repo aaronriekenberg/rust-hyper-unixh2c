@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_trait::async_trait;
 
 use http_body_util::BodyExt;
@@ -23,7 +24,7 @@ const DEFAULT_CACHE_DURATION_SECONDS: u32 = 60 * 60;
 
 const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
 
-const CLIENT_ERROR_CACHE_DURATION_SECONDS: u32 = 5 * 60;
+const CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS: u32 = 5 * 60;
 
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
@@ -50,75 +51,32 @@ impl StaticFileHandler {
         }
     }
 
-    async fn build_client_error_page_response(&self) -> Response<ResponseBody> {
+    async fn build_client_error_page_response(&self) -> anyhow::Result<Response<ResponseBody>> {
         let client_error_page_request = hyper::http::Request::get(self.client_error_page_path)
             .body(())
             .unwrap();
 
-        let resolve_result = match self
+        let resolve_result = self
             .resolver
             .resolve_request(&client_error_page_request)
             .await
-        {
-            Ok(resolve_result) => resolve_result,
-            Err(e) => {
-                warn!(
-                    "build_client_error_page_response resolve_request error e = {}",
-                    e
-                );
-                return build_status_code_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    CacheControl::NoCache,
-                );
-            }
-        };
+            .context("build_client_error_page_response: resolve_request error")?;
 
-        let response = match hyper_staticfile::ResponseBuilder::new()
+        let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
-            .cache_headers(Some(CLIENT_ERROR_CACHE_DURATION_SECONDS))
+            .cache_headers(Some(CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS))
             .build(resolve_result)
-        {
-            Ok(response) => response,
-            Err(e) => {
-                warn!(
-                    "build_client_error_page_response ResponseBuilder.build error e = {}",
-                    e
-                );
-                return build_status_code_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    CacheControl::NoCache,
-                );
-            }
-        };
+            .context("build_client_error_page_response: ResponseBuilder.build error")?;
 
         let (mut parts, body) = response.into_parts();
         parts.status = StatusCode::NOT_FOUND;
 
         let boxed_body = body.map_err(|e| e.into()).boxed();
 
-        Response::from_parts(parts, boxed_body)
+        Ok(Response::from_parts(parts, boxed_body))
     }
 
-    async fn handle_resolve_errors(
-        &self,
-        resolve_result: &ResolveResult,
-    ) -> Option<Response<ResponseBody>> {
-        match resolve_result {
-            ResolveResult::MethodNotMatched => Some(build_status_code_response(
-                StatusCode::BAD_REQUEST,
-                CacheControl::NoCache,
-            )),
-            ResolveResult::NotFound | ResolveResult::PermissionDenied => {
-                Some(self.build_client_error_page_response().await)
-            }
-            _ => None,
-        }
-    }
-
-    async fn block_dot_paths(
-        &self,
-        resolve_result: &ResolveResult,
-    ) -> Option<Response<ResponseBody>> {
+    fn block_dot_paths(&self, resolve_result: &ResolveResult) -> bool {
         let str_path_option = match resolve_result {
             ResolveResult::Found(resolved_file) => resolved_file.path.to_str(),
             ResolveResult::IsDirectory { redirect_to } => Some(redirect_to.as_str()),
@@ -129,11 +87,11 @@ impl StaticFileHandler {
             debug!("str_path = {}", str_path);
             if str_path.starts_with('.') || str_path.contains("/.") {
                 warn!("blocking request for dot file path = {:?}", str_path);
-                return Some(self.build_client_error_page_response().await);
+                return true;
             }
         };
 
-        None
+        false
     }
 
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
@@ -171,58 +129,54 @@ impl StaticFileHandler {
             _ => None,
         }
     }
-}
 
-#[async_trait]
-impl RequestHandler for StaticFileHandler {
-    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
-        debug!("handle_static_file request = {:?}", request);
+    async fn try_handle(&self, request: &HttpRequest) -> anyhow::Result<Response<ResponseBody>> {
+        debug!("StaticFileHandler::try_handle request = {:?}", request);
 
-        let resolve_result = match self.resolver.resolve_request(request.hyper_request()).await {
-            Ok(resolve_result) => resolve_result,
-            Err(e) => {
-                warn!("resolve_request error e = {}", e);
-                return build_status_code_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    CacheControl::NoCache,
-                );
-            }
-        };
+        let resolve_result = self
+            .resolver
+            .resolve_request(request.hyper_request())
+            .await
+            .context("try_handle: resolve_request error")?;
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if let Some(response) = self.handle_resolve_errors(&resolve_result).await {
-            return response;
-        }
-
-        if let Some(response) = self.block_dot_paths(&resolve_result).await {
-            return response;
+        if matches!(
+            resolve_result,
+            ResolveResult::NotFound | ResolveResult::PermissionDenied
+        ) || self.block_dot_paths(&resolve_result)
+        {
+            return self.build_client_error_page_response().await;
         }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
 
         debug!("cache_headers = {:?}", cache_headers);
 
-        let response = match hyper_staticfile::ResponseBuilder::new()
+        let response = hyper_staticfile::ResponseBuilder::new()
             .request(request.hyper_request())
             .cache_headers(cache_headers)
             .build(resolve_result)
-        {
-            Ok(response) => response,
-            Err(e) => {
-                warn!("ResponseBuilder.build error e = {}", e);
-                return build_status_code_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    CacheControl::NoCache,
-                );
-            }
-        };
+            .context("try_handle: resolve_request error")?;
 
         let (parts, body) = response.into_parts();
 
         let boxed_body = body.map_err(|e| e.into()).boxed();
 
-        Response::from_parts(parts, boxed_body)
+        Ok(Response::from_parts(parts, boxed_body))
+    }
+}
+
+#[async_trait]
+impl RequestHandler for StaticFileHandler {
+    async fn handle(&self, request: &HttpRequest) -> Response<ResponseBody> {
+        match self.try_handle(request).await {
+            Ok(response) => response,
+            Err(e) => {
+                warn!("StaticFileHandler::try_handle error: {}", e);
+                build_status_code_response(StatusCode::INTERNAL_SERVER_ERROR, CacheControl::NoCache)
+            }
+        }
     }
 }
 
