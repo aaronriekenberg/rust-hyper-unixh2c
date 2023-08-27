@@ -7,7 +7,10 @@ use hyper::{
 
 use hyper_util::rt::TokioExecutor;
 
-use tokio::{pin, time::Duration};
+use tokio::{
+    pin,
+    time::{Duration, Instant},
+};
 
 use tracing::{debug, info, instrument, warn, Instrument};
 
@@ -21,6 +24,8 @@ use crate::{
     response::ResponseBody,
     server::{h1h2conn::HyperH1OrH2Connection, utils::HyperReadWrite},
 };
+
+const REQUEST_COMPLETE: &str = "request complete";
 
 pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
@@ -61,6 +66,8 @@ impl ConnectionHandler {
             id = request_id.as_usize(),
             method = %hyper_request.method(),
             uri = %hyper_request.uri(),
+            duration,
+            status,
         )
     )]
     async fn handle_request(
@@ -69,13 +76,28 @@ impl ConnectionHandler {
         request_id: RequestID,
         hyper_request: Request<hyper::body::Incoming>,
     ) -> Result<Response<ResponseBody>, Infallible> {
-        debug!("begin handle_request");
+        let start_time = Instant::now();
 
         let http_request = HttpRequest::new(connection_id, request_id, hyper_request);
 
         let result = self.request_handler.handle(&http_request).await;
 
-        debug!("end handle_request");
+        let duration = Instant::now() - start_time;
+
+        let status = result.status();
+
+        tracing::Span::current()
+            .record("duration", duration.as_secs_f64())
+            .record("status", status.as_u16());
+
+        if status.is_success() {
+            debug!(REQUEST_COMPLETE);
+        } else if status.is_informational() || status.is_redirection() || status.is_client_error() {
+            info!(REQUEST_COMPLETE);
+        } else {
+            warn!(REQUEST_COMPLETE);
+        };
+
         Ok(result)
     }
 
