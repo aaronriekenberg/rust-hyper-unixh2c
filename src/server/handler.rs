@@ -64,7 +64,7 @@ impl ConnectionHandler {
             id = request_id.as_usize(),
             method = %hyper_request.method(),
             uri = %hyper_request.uri(),
-            duration,
+            micros,
             status,
         )
     )]
@@ -85,7 +85,7 @@ impl ConnectionHandler {
         let status = result.status();
 
         tracing::Span::current()
-            .record("duration", duration.as_secs_f64())
+            .record("micros", duration.as_micros())
             .record("status", status.as_u16());
 
         if status.is_success() {
