@@ -25,8 +25,6 @@ use crate::{
     server::{h1h2conn::HyperH1OrH2Connection, utils::HyperReadWrite},
 };
 
-const REQUEST_COMPLETE: &str = "request complete";
-
 pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
@@ -91,11 +89,11 @@ impl ConnectionHandler {
             .record("status", status.as_u16());
 
         if status.is_success() {
-            debug!(REQUEST_COMPLETE);
+            debug!("request complete");
         } else if status.is_informational() || status.is_redirection() || status.is_client_error() {
-            info!(REQUEST_COMPLETE);
+            info!("request complete");
         } else {
-            warn!(REQUEST_COMPLETE);
+            warn!("request complete");
         };
 
         Ok(result)
