@@ -29,7 +29,7 @@ pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
 
     routes.append(&mut version_info::create_routes().await);
 
-    let default_route = static_file::create_default_route().await;
+    let default_route = static_file::create_default_route().await?;
 
     let router = Box::new(route::Router::new(routes, default_route)?);
 

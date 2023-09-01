@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_trait::async_trait;
 
 use http_body_util::BodyExt;
@@ -40,13 +41,47 @@ enum StaticFileHandlerError {
     BuildResponse(hyper::http::Error),
 }
 
+struct ModificationTimeHeaderRule {
+    url_regex: regex::Regex,
+    file_cache_duration: Duration,
+}
+
+impl ModificationTimeHeaderRule {
+    fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool {
+        let str_path = resolved_file.path.to_str().unwrap_or_default();
+
+        self.url_regex.is_match(str_path)
+    }
+
+    fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration {
+        match resolved_file.modified {
+            None => Duration::from_secs(0),
+            Some(modified) => {
+                let now = SystemTime::now();
+
+                let file_expiration = modified + self.file_cache_duration;
+
+                let request_cache_duration = file_expiration.duration_since(now).unwrap_or_default();
+
+                debug!(
+                    "file_expiration = {:?} cache_duration = {:?}",
+                    file_expiration, request_cache_duration
+                );
+
+                request_cache_duration
+            }
+        }
+    }
+}
+
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
+    modificiation_time_header_rules: Vec<ModificationTimeHeaderRule>,
 }
 
 impl StaticFileHandler {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         let static_file_configuration = crate::config::instance().static_file_configuration();
         let root = Path::new(static_file_configuration.path());
 
@@ -59,10 +94,17 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        Self {
+        let modificiation_time_header_rules = vec![ModificationTimeHeaderRule {
+            url_regex: regex::Regex::new(r"^vnstat/.*\.png$")
+                .context("error compiling vnstat png regex")?,
+            cache_duration: VNSTAT_PNG_CACHE_DURATION,
+        }];
+
+        Ok(Self {
             resolver,
             client_error_page_path: static_file_configuration.client_error_page_path(),
-        }
+            modificiation_time_header_rules,
+        })
     }
 
     async fn build_client_error_page_response(
@@ -113,33 +155,19 @@ impl StaticFileHandler {
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
         match resolve_result {
             ResolveResult::Found(resolved_file) => {
-                debug!("resolved_file.path = {:?}", resolved_file.path,);
+                let matching_rule_option = self
+                    .modificiation_time_header_rules
+                    .iter()
+                    .find(|rule| rule.matches(resolved_file));
 
-                let str_path = resolved_file.path.to_str().unwrap_or_default();
-
-                if !(str_path.contains("vnstat/") && str_path.ends_with(".png")) {
-                    Some(DEFAULT_CACHE_DURATION_SECONDS)
-                } else {
-                    debug!("request for vnstat png file path");
-
-                    match resolved_file.modified {
-                        None => Some(0),
-                        Some(modified) => {
-                            let now = SystemTime::now();
-
-                            let file_expiration = modified + VNSTAT_PNG_CACHE_DURATION;
-
-                            let cache_duration =
-                                file_expiration.duration_since(now).unwrap_or_default();
-
-                            debug!(
-                                "file_expiration = {:?} cache_duration = {:?}",
-                                file_expiration, cache_duration
-                            );
-
-                            Some(cache_duration.as_secs().try_into().unwrap_or_default())
-                        }
-                    }
+                match matching_rule_option {
+                    None => Some(DEFAULT_CACHE_DURATION_SECONDS),
+                    Some(rule) => Some(
+                        rule.build_cache_header(resolved_file)
+                            .as_secs()
+                            .try_into()
+                            .unwrap_or_default(),
+                    ),
                 }
             }
             _ => None,
@@ -199,6 +227,6 @@ impl RequestHandler for StaticFileHandler {
     }
 }
 
-pub async fn create_default_route() -> Box<dyn RequestHandler> {
-    Box::new(StaticFileHandler::new())
+pub async fn create_default_route() -> anyhow::Result<Box<dyn RequestHandler>> {
+    Ok(Box::new(StaticFileHandler::new()?))
 }

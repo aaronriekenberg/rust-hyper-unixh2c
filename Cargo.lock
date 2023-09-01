@@ -804,6 +804,7 @@ dependencies = [
  "hyper-staticfile",
  "hyper-util",
  "pin-project",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",
