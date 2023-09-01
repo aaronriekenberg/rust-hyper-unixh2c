@@ -61,7 +61,8 @@ impl ModificationTimeHeaderRule {
 
                 let file_expiration = modified + self.file_cache_duration;
 
-                let request_cache_duration = file_expiration.duration_since(now).unwrap_or_default();
+                let request_cache_duration =
+                    file_expiration.duration_since(now).unwrap_or_default();
 
                 debug!(
                     "file_expiration = {:?} cache_duration = {:?}",
@@ -97,7 +98,7 @@ impl StaticFileHandler {
         let modificiation_time_header_rules = vec![ModificationTimeHeaderRule {
             url_regex: regex::Regex::new(r"^vnstat/.*\.png$")
                 .context("error compiling vnstat png regex")?,
-            cache_duration: VNSTAT_PNG_CACHE_DURATION,
+            file_cache_duration: VNSTAT_PNG_CACHE_DURATION,
         }];
 
         Ok(Self {
