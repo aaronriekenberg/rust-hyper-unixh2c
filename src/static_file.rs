@@ -11,7 +11,7 @@ use crate::config::StaticFileCacheRuleType;
 static RULES_SERVICE_INSTANCE: OnceCell<StaticFileRulesService> = OnceCell::const_new();
 
 trait CacheRule: Send + Sync + Debug {
-    fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool;
+    fn matches(&self, resolved_path: &str) -> bool;
 
     fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration;
 }
@@ -32,10 +32,8 @@ impl FixedTimeCacheHeaderRule {
 }
 
 impl CacheRule for FixedTimeCacheHeaderRule {
-    fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool {
-        let str_path = resolved_file.path.to_str().unwrap_or_default();
-
-        self.url_regex.is_match(str_path)
+    fn matches(&self, resolved_path: &str) -> bool {
+        self.url_regex.is_match(resolved_path)
     }
 
     fn build_cache_header(&self, _: &hyper_staticfile::ResolvedFile) -> Duration {
@@ -59,10 +57,8 @@ impl ModificationTimePlusDeltaCacheHeaderRule {
 }
 
 impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
-    fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool {
-        let str_path = resolved_file.path.to_str().unwrap_or_default();
-
-        self.url_regex.is_match(str_path)
+    fn matches(&self, resolved_path: &str) -> bool {
+        self.url_regex.is_match(resolved_path)
     }
 
     fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration {
@@ -128,9 +124,11 @@ impl StaticFileRulesService {
         &self,
         resolved_file: &hyper_staticfile::ResolvedFile,
     ) -> Option<Duration> {
+        let str_path = resolved_file.path.to_str().unwrap_or_default();
+
         self.cache_rules
             .iter()
-            .find(|rule| rule.matches(resolved_file))
+            .find(|rule| rule.matches(str_path))
             .map(|rule| rule.build_cache_header(resolved_file))
     }
 }
