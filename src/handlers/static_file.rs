@@ -39,12 +39,12 @@ enum StaticFileHandlerError {
     BuildResponse(hyper::http::Error),
 }
 
-struct ModificationTimeHeaderRule {
+struct ModificationTimeCacheHeaderRule {
     url_regex: regex::Regex,
     file_cache_duration: Duration,
 }
 
-impl ModificationTimeHeaderRule {
+impl ModificationTimeCacheHeaderRule {
     fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool {
         let str_path = resolved_file.path.to_str().unwrap_or_default();
 
@@ -77,7 +77,7 @@ struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
     client_error_page_cache_duration: Duration,
-    modification_time_header_rules: Vec<ModificationTimeHeaderRule>,
+    modification_time_cache_header_rules: Vec<ModificationTimeCacheHeaderRule>,
     default_cache_duration: Duration,
 }
 
@@ -95,7 +95,7 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        let modification_time_header_rules = vec![ModificationTimeHeaderRule {
+        let modification_time_cache_header_rules = vec![ModificationTimeCacheHeaderRule {
             url_regex: regex::Regex::new(r"^vnstat/.*\.png$")
                 .context("error compiling vnstat png regex")?,
             file_cache_duration: Duration::from_secs(15 * 60),
@@ -105,7 +105,7 @@ impl StaticFileHandler {
             resolver,
             client_error_page_path: static_file_configuration.client_error_page_path(),
             client_error_page_cache_duration: Duration::from_secs(60 * 60),
-            modification_time_header_rules,
+            modification_time_cache_header_rules,
             default_cache_duration: Duration::from_secs(60 * 60),
         })
     }
@@ -161,7 +161,7 @@ impl StaticFileHandler {
         match resolve_result {
             ResolveResult::Found(resolved_file) => {
                 let matching_rule_option = self
-                    .modification_time_header_rules
+                    .modification_time_cache_header_rules
                     .iter()
                     .find(|rule| rule.matches(resolved_file));
 
