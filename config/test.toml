@@ -10,17 +10,6 @@ connection_limit = 100
 connection_max_lifetime = "2m"
 connection_graceful_shutdown_timeout = "5s"
 
-[command_configuration]
-max_concurrent_commands = 1
-semaphore_acquire_timeout = "200ms"
-commands = [
-    { id = "sleep", description = "sleep", command = "/bin/sleep", args = [
-        "5",
-    ] },
-    { id = "vmstat", description = "vmstat", command = "/usr/bin/vmstat" },
-    { id = "w", description = "w", command = "/usr/bin/w" },
-]
-
 [static_file_configuration]
 path = "/Users/aaron/vscode/aaronr.digital"
 precompressed_br = false
@@ -30,4 +19,15 @@ client_error_page_cache_duration = "5m"
 cache_rules = [
     { url_regex = '^vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15m" },
     { url_regex = '.*', rule_type = "FIXED_TIME", duration = "1h" },
+]
+
+[command_configuration]
+max_concurrent_commands = 1
+semaphore_acquire_timeout = "200ms"
+commands = [
+    { id = "sleep", description = "sleep", command = "/bin/sleep", args = [
+        "5",
+    ] },
+    { id = "vmstat", description = "vmstat", command = "/usr/bin/vmstat" },
+    { id = "w", description = "w", command = "/usr/bin/w" },
 ]
