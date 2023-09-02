@@ -1,4 +1,3 @@
-use anyhow::Context;
 use async_trait::async_trait;
 
 use http_body_util::BodyExt;
@@ -9,7 +8,7 @@ use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
 use tracing::{debug, warn};
 
-use std::{path::Path, time::SystemTime};
+use std::path::Path;
 
 use tokio::time::Duration;
 
@@ -18,9 +17,10 @@ use crate::{
         response_utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody,
     },
     response::CacheControl,
+    static_file::StaticFileRulesService,
 };
 
-fn duration_to_u32_seconds(duration: &Duration) -> u32 {
+fn duration_to_u32_seconds(duration: Duration) -> u32 {
     duration.as_secs().try_into().unwrap_or_default()
 }
 
@@ -39,46 +39,11 @@ enum StaticFileHandlerError {
     BuildResponse(hyper::http::Error),
 }
 
-struct ModificationTimeCacheHeaderRule {
-    url_regex: regex::Regex,
-    file_cache_duration: Duration,
-}
-
-impl ModificationTimeCacheHeaderRule {
-    fn matches(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> bool {
-        let str_path = resolved_file.path.to_str().unwrap_or_default();
-
-        self.url_regex.is_match(str_path)
-    }
-
-    fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration {
-        match resolved_file.modified {
-            None => Duration::from_secs(0),
-            Some(modified) => {
-                let now = SystemTime::now();
-
-                let file_expiration = modified + self.file_cache_duration;
-
-                let request_cache_duration =
-                    file_expiration.duration_since(now).unwrap_or_default();
-
-                debug!(
-                    "file_expiration = {:?} cache_duration = {:?}",
-                    file_expiration, request_cache_duration
-                );
-
-                request_cache_duration
-            }
-        }
-    }
-}
-
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
     client_error_page_cache_duration: Duration,
-    modification_time_cache_header_rules: Vec<ModificationTimeCacheHeaderRule>,
-    default_cache_duration: Duration,
+    static_file_rules_service: &'static StaticFileRulesService,
 }
 
 impl StaticFileHandler {
@@ -95,18 +60,12 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        let modification_time_cache_header_rules = vec![ModificationTimeCacheHeaderRule {
-            url_regex: regex::Regex::new(r"^vnstat/.*\.png$")
-                .context("error compiling vnstat png regex")?,
-            file_cache_duration: Duration::from_secs(15 * 60),
-        }];
-
         Ok(Self {
             resolver,
             client_error_page_path: static_file_configuration.client_error_page_path(),
-            client_error_page_cache_duration: Duration::from_secs(60 * 60),
-            modification_time_cache_header_rules,
-            default_cache_duration: Duration::from_secs(60 * 60),
+            client_error_page_cache_duration: *static_file_configuration
+                .client_error_page_cache_duration(),
+            static_file_rules_service: crate::static_file::rules_service_instance(),
         })
     }
 
@@ -126,7 +85,7 @@ impl StaticFileHandler {
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
             .cache_headers(Some(duration_to_u32_seconds(
-                &self.client_error_page_cache_duration,
+                self.client_error_page_cache_duration,
             )))
             .build(resolve_result)
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
@@ -159,19 +118,10 @@ impl StaticFileHandler {
 
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
         match resolve_result {
-            ResolveResult::Found(resolved_file) => {
-                let matching_rule_option = self
-                    .modification_time_cache_header_rules
-                    .iter()
-                    .find(|rule| rule.matches(resolved_file));
-
-                match matching_rule_option {
-                    None => Some(duration_to_u32_seconds(&self.default_cache_duration)),
-                    Some(rule) => Some(duration_to_u32_seconds(
-                        &rule.build_cache_header(resolved_file),
-                    )),
-                }
-            }
+            ResolveResult::Found(resolved_file) => self
+                .static_file_rules_service
+                .build_cache_header(resolved_file)
+                .map(duration_to_u32_seconds),
             _ => None,
         }
     }

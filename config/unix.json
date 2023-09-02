@@ -47,6 +47,19 @@
         "path": "/Users/aaron/vscode/aaronr.digital",
         "precompressed_br": false,
         "precompressed_gz": false,
-        "client_error_page_path": "/notfound.html"
+        "client_error_page_path": "/notfound.html",
+        "client_error_page_cache_duration": "5m",
+        "cache_rules": [
+            {
+                "url_regex": "^vnstat/.*\\.png$",
+                "rule_type": "MOD_TIME_PLUS_DELTA",
+                "duration": "15m"
+            },
+            {
+                "url_regex": ".*",
+                "rule_type": "FIXED_TIME",
+                "duration": "1h"
+            }
+        ]
     }
 }

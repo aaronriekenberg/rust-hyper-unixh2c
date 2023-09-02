@@ -84,6 +84,28 @@ pub struct CommandConfiguration {
     commands: Vec<CommandInfo>,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum StaticFileCacheRuleType {
+    #[serde(rename = "MOD_TIME_PLUS_DELTA")]
+    ModTimePlusDelta,
+
+    #[serde(rename = "FIXED_TIME")]
+    FixedTime,
+}
+
+#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+pub struct StaticFileCacheRule {
+    #[getset(get = "pub")]
+    url_regex: String,
+
+    #[getset(get_copy = "pub")]
+    rule_type: StaticFileCacheRuleType,
+
+    #[getset(get_copy = "pub")]
+    #[serde(with = "humantime_serde")]
+    duration: Duration,
+}
+
 #[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct StaticFileConfiguration {
     #[getset(get = "pub")]
@@ -97,6 +119,13 @@ pub struct StaticFileConfiguration {
 
     #[getset(get = "pub")]
     client_error_page_path: String,
+
+    #[getset(get = "pub")]
+    #[serde(with = "humantime_serde")]
+    client_error_page_cache_duration: Duration,
+
+    #[getset(get = "pub")]
+    cache_rules: Vec<StaticFileCacheRule>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Getters)]
