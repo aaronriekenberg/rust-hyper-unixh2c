@@ -41,7 +41,7 @@ async fn try_main() -> anyhow::Result<()> {
         .await
         .context("read_configuration error")?;
 
-    static_file::create_rules_service_instance()?;
+    crate::static_file::create_rules_service_instance()?;
 
     let handlers = handlers::create_handlers().await?;
 
