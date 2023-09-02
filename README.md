@@ -10,11 +10,11 @@ Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
 When the release build is too slow on your Raspberry Pi: Use [github actions](https://github.com/aaronriekenberg/rust-hyper-server/actions) to cross-compile.
 
 ## Memory Usage
-This app runs in about 4 megabytes of resident memory (RSS) on a 64-bit Raspberry Pi.
+This app runs in about 8 megabytes of resident memory (RSS) on a 64-bit Raspberry Pi.
 
 ```
 $ ps -eo pid,pmem,rss,vsz,comm --sort -rss
 
     PID %MEM   RSS    VSZ COMMAND         
-   1181  0.4  3740 886308 rust-hyper-serv
+  10791  0.8  7744 890832 rust-hyper-serv
 ```
