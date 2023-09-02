@@ -5,7 +5,7 @@ AssertPathExists=%h/rust-hyper-server/target/release/rust-hyper-server
 
 [Service]
 WorkingDirectory=%h/rust-hyper-server
-ExecStart=%h/rust-hyper-server/target/release/rust-hyper-server ./config/config.json
+ExecStart=%h/rust-hyper-server/target/release/rust-hyper-server ./config/config.toml
 Restart=always
 Environment=RUST_LOG=info
 Environment=LOG_FORMAT=prod

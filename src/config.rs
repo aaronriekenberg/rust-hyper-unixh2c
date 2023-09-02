@@ -152,7 +152,10 @@ pub async fn read_configuration(config_file: String) -> anyhow::Result<()> {
         .await
         .with_context(|| format!("error reading '{}'", config_file))?;
 
-    let configuration: Configuration = ::serde_json::from_slice(&file_contents)
+    let file_contents_string = String::from_utf8(file_contents)
+        .with_context(|| format!("String::from_utf8 error reading '{}'", config_file))?;
+
+    let configuration: Configuration = ::toml::from_str(&file_contents_string)
         .with_context(|| format!("error unmarshalling '{}'", config_file))?;
 
     debug!("configuration\n{:#?}", configuration);

@@ -1,0 +1,33 @@
+[context_configuration]
+dynamic_route_context = "/api/v1"
+
+[server_configuration]
+listeners = [
+    { server_protocol = "HTTP2", server_socket_type = "UNIX", bind_address = "./socket" },
+    { server_protocol = "HTTP1", server_socket_type = "TCP", bind_address = "[::]:8080" },
+]
+connection_limit = 100
+connection_max_lifetime = "2m"
+connection_graceful_shutdown_timeout = "5s"
+
+[command_configuration]
+max_concurrent_commands = 1
+semaphore_acquire_timeout = "200ms"
+commands = [
+    { id = "sleep", description = "sleep", command = "/bin/sleep", args = [
+        "5",
+    ] },
+    { id = "vmstat", description = "vmstat", command = "/usr/bin/vmstat" },
+    { id = "w", description = "w", command = "/usr/bin/w" },
+]
+
+[static_file_configuration]
+path = "/Users/aaron/vscode/aaronr.digital"
+precompressed_br = false
+precompressed_gz = false
+client_error_page_path = "/notfound.html"
+client_error_page_cache_duration = "5m"
+cache_rules = [
+    { url_regex = '^vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15m" },
+    { url_regex = '.*', rule_type = "FIXED_TIME", duration = "1h" },
+]
