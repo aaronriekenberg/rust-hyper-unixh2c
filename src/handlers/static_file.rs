@@ -20,11 +20,9 @@ use crate::{
     response::CacheControl,
 };
 
-const DEFAULT_CACHE_DURATION_SECONDS: u32 = 60 * 60;
-
-const VNSTAT_PNG_CACHE_DURATION: Duration = Duration::from_secs(15 * 60);
-
-const CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS: u32 = 5 * 60;
+fn duration_to_u32_seconds(duration: &Duration) -> u32 {
+    duration.as_secs().try_into().unwrap_or_default()
+}
 
 #[derive(thiserror::Error, Debug)]
 enum StaticFileHandlerError {
@@ -78,7 +76,9 @@ impl ModificationTimeHeaderRule {
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
-    modificiation_time_header_rules: Vec<ModificationTimeHeaderRule>,
+    client_error_page_cache_duration: Duration,
+    modification_time_header_rules: Vec<ModificationTimeHeaderRule>,
+    default_cache_duration: Duration,
 }
 
 impl StaticFileHandler {
@@ -95,16 +95,18 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        let modificiation_time_header_rules = vec![ModificationTimeHeaderRule {
+        let modification_time_header_rules = vec![ModificationTimeHeaderRule {
             url_regex: regex::Regex::new(r"^vnstat/.*\.png$")
                 .context("error compiling vnstat png regex")?,
-            file_cache_duration: VNSTAT_PNG_CACHE_DURATION,
+            file_cache_duration: Duration::from_secs(15 * 60),
         }];
 
         Ok(Self {
             resolver,
             client_error_page_path: static_file_configuration.client_error_page_path(),
-            modificiation_time_header_rules,
+            client_error_page_cache_duration: Duration::from_secs(60 * 60),
+            modification_time_header_rules,
+            default_cache_duration: Duration::from_secs(60 * 60),
         })
     }
 
@@ -123,7 +125,9 @@ impl StaticFileHandler {
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
-            .cache_headers(Some(CLIENT_ERROR_PAGE_CACHE_DURATION_SECONDS))
+            .cache_headers(Some(duration_to_u32_seconds(
+                &self.client_error_page_cache_duration,
+            )))
             .build(resolve_result)
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 
@@ -157,18 +161,15 @@ impl StaticFileHandler {
         match resolve_result {
             ResolveResult::Found(resolved_file) => {
                 let matching_rule_option = self
-                    .modificiation_time_header_rules
+                    .modification_time_header_rules
                     .iter()
                     .find(|rule| rule.matches(resolved_file));
 
                 match matching_rule_option {
-                    None => Some(DEFAULT_CACHE_DURATION_SECONDS),
-                    Some(rule) => Some(
-                        rule.build_cache_header(resolved_file)
-                            .as_secs()
-                            .try_into()
-                            .unwrap_or_default(),
-                    ),
+                    None => Some(duration_to_u32_seconds(&self.default_cache_duration)),
+                    Some(rule) => Some(duration_to_u32_seconds(
+                        &rule.build_cache_header(resolved_file),
+                    )),
                 }
             }
             _ => None,
