@@ -4,7 +4,7 @@
 Static file server and rest API in rust using [hyper](https://hyper.rs/) and [tokio](https://tokio.rs/)
 
 Features:
-* toml configuration
+* [toml configuration files](https://github.com/aaronriekenberg/rust-hyper-server/tree/main/config)
 * any number HTTP 1.x or HTTP 2 servers using hyper, each listening on 1 configured TCP or UNIX socket
   * includes a [`pin_project` enum wrapping H1 and H2 hyper connections](https://github.com/aaronriekenberg/rust-hyper-server/blob/main/src/server/h1h2conn.rs) for polling and graceful shutdown
 * structured logging with spans for incoming connections and requests
