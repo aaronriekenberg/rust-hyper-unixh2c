@@ -10,7 +10,7 @@ Features:
 * structured logging with spans for incoming connections and requests
 * static file server using [hyper-staticfile](https://github.com/stephank/hyper-staticfile)
   * precompressed static files (bz and/or gz)
-* configurable rules using regular expressions for cache control response headers on static files
+* configurable rules list using regular expressions for cache control response headers on static files
 * server connection tracking
   * timeouts with graceful shutdown
   * track connection age, requests per connection, configurable connection limit
