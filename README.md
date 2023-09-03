@@ -13,7 +13,7 @@ Features:
 * precompressed static files
 * server connection tracking
   * timeouts with graceful shutdown
-  * rest endpoint to get current connection state
+  * track connection age, requests per connection, configurable connection limit
   * historical connection metrics
 * generic `handlers::RequestHandler` async trait to build REST-style endpoints
   * asynchronously run configured shell commands and return response
