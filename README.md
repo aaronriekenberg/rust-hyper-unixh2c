@@ -8,9 +8,9 @@ Features:
 * any number HTTP 1.x or HTTP 2 servers using hyper, each listening on 1 configured TCP or UNIX socket
   * includes a [`pin_project` enum wrapping H1 and H2 hyper connections](https://github.com/aaronriekenberg/rust-hyper-server/blob/main/src/server/h1h2conn.rs) for polling and graceful shutdown
 * structured logging with spans for incoming connections and requests
-* static file server using [hyper-staticfile](https://github.com/stephank/hyper-staticfile) 
+* static file server using [hyper-staticfile](https://github.com/stephank/hyper-staticfile)
+  * precompressed static files (bz and/or gz)
 * configurable rules using regular expressions for cache control response headers on static files
-* precompressed static files
 * server connection tracking
   * timeouts with graceful shutdown
   * track connection age, requests per connection, configurable connection limit
