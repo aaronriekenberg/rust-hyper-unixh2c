@@ -16,7 +16,7 @@ Features:
   * track connection age, requests per connection, configurable connection limit
   * historical connection metrics
 * generic `handlers::RequestHandler` async trait to build REST-style endpoints
-  * asynchronously run configured shell commands and return response
+  * asynchronously run configured shell commands and return response as json
   * connection info
   * request info
   * version info
