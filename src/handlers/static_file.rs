@@ -42,7 +42,7 @@ enum StaticFileHandlerError {
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
-    client_error_page_cache_duration: Duration,
+    client_error_page_cache_duration: Option<Duration>,
     static_file_rules_service: &'static StaticFileRulesService,
 }
 
@@ -84,9 +84,10 @@ impl StaticFileHandler {
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
-            .cache_headers(Some(duration_to_u32_seconds(
-                self.client_error_page_cache_duration,
-            )))
+            .cache_headers(
+                self.client_error_page_cache_duration
+                    .map(duration_to_u32_seconds),
+            )
             .build(resolve_result)
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 

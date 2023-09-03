@@ -122,7 +122,8 @@ pub struct StaticFileConfiguration {
 
     #[getset(get = "pub")]
     #[serde(with = "humantime_serde")]
-    client_error_page_cache_duration: Duration,
+    #[serde(default)]
+    client_error_page_cache_duration: Option<Duration>,
 
     #[getset(get = "pub")]
     cache_rules: Vec<StaticFileCacheRule>,
