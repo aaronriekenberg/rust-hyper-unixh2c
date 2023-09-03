@@ -11,7 +11,7 @@ Features:
 * static file server using [hyper-staticfile](https://github.com/stephank/hyper-staticfile) 
 * configurable rules using regular expressions for cache control response headers on static files
 * precompressed static files
-* connection tracking
+* server connection tracking
   * timeouts with graceful shutdown
   * rest endpoint to get current connection state
   * historical connection metrics
