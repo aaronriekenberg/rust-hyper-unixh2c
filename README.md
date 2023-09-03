@@ -1,7 +1,7 @@
 # rust-hyper-server
 
 ## What is this?
-Static file server and rest API in rust using [hyper v1.0.0-rc.4](https://github.com/hyperium/hyper) and [tokio](https://tokio.rs/)
+Static file server and REST API in rust using [hyper v1.0.0-rc.4](https://github.com/hyperium/hyper) and [tokio](https://tokio.rs/)
 
 Features:
 * [toml configuration files](https://github.com/aaronriekenberg/rust-hyper-server/tree/main/config)
