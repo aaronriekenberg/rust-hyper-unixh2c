@@ -96,7 +96,7 @@ pub enum StaticFileCacheRuleType {
 #[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct StaticFileCacheRule {
     #[getset(get = "pub")]
-    url_regex: String,
+    path_regex: String,
 
     #[getset(get_copy = "pub")]
     rule_type: StaticFileCacheRuleType,

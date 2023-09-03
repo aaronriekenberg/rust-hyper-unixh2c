@@ -18,14 +18,14 @@ trait CacheRule: Send + Sync + Debug {
 
 #[derive(Debug)]
 struct FixedTimeCacheHeaderRule {
-    url_regex: regex::Regex,
+    path_regex: regex::Regex,
     file_cache_duration: Duration,
 }
 
 impl FixedTimeCacheHeaderRule {
-    fn new(url_regex: regex::Regex, file_cache_duration: Duration) -> Self {
+    fn new(path_regex: regex::Regex, file_cache_duration: Duration) -> Self {
         Self {
-            url_regex,
+            path_regex,
             file_cache_duration,
         }
     }
@@ -33,7 +33,7 @@ impl FixedTimeCacheHeaderRule {
 
 impl CacheRule for FixedTimeCacheHeaderRule {
     fn matches(&self, resolved_path: &str) -> bool {
-        self.url_regex.is_match(resolved_path)
+        self.path_regex.is_match(resolved_path)
     }
 
     fn build_cache_header(&self, _: &hyper_staticfile::ResolvedFile) -> Duration {
@@ -43,14 +43,14 @@ impl CacheRule for FixedTimeCacheHeaderRule {
 
 #[derive(Debug)]
 struct ModificationTimePlusDeltaCacheHeaderRule {
-    url_regex: regex::Regex,
+    path_regex: regex::Regex,
     file_cache_duration: Duration,
 }
 
 impl ModificationTimePlusDeltaCacheHeaderRule {
-    fn new(url_regex: regex::Regex, file_cache_duration: Duration) -> Self {
+    fn new(path_regex: regex::Regex, file_cache_duration: Duration) -> Self {
         Self {
-            url_regex,
+            path_regex,
             file_cache_duration,
         }
     }
@@ -58,7 +58,7 @@ impl ModificationTimePlusDeltaCacheHeaderRule {
 
 impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
     fn matches(&self, resolved_path: &str) -> bool {
-        self.url_regex.is_match(resolved_path)
+        self.path_regex.is_match(resolved_path)
     }
 
     fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration {
@@ -96,19 +96,19 @@ impl StaticFileRulesService {
             Vec::with_capacity(static_file_configuration.cache_rules().len());
 
         for cache_rule in static_file_configuration.cache_rules() {
-            let url_regex = regex::Regex::new(cache_rule.url_regex())
+            let path_regex = regex::Regex::new(cache_rule.path_regex())
                 .context("StaticFileRulesService::new: error parsing regex")?;
 
             match cache_rule.rule_type() {
                 StaticFileCacheRuleType::FixedTime => {
                     cache_rules.push(Box::new(FixedTimeCacheHeaderRule::new(
-                        url_regex,
+                        path_regex,
                         cache_rule.duration(),
                     )));
                 }
                 StaticFileCacheRuleType::ModTimePlusDelta => {
                     cache_rules.push(Box::new(ModificationTimePlusDeltaCacheHeaderRule::new(
-                        url_regex,
+                        path_regex,
                         cache_rule.duration(),
                     )));
                 }
