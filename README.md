@@ -1,10 +1,25 @@
 # rust-hyper-server
 
 ## What is this?
-Similar to [rust-fastcgi](https://github.com/aaronriekenberg/rust-fastcgi), but:
+Static file server and rest API in rust using [hyper](https://hyper.rs/) and [tokio](https://tokio.rs/)
 
-* Using [hyper](https://hyper.rs/) to do cleartext HTTP/2 (h2c) or HTTP/1.1 over UNIX and/or TCP sockets.
-* Using [hyper-staticfile](https://github.com/stephank/hyper-staticfile) to serve static files.
+Some features:
+* toml configuration
+* any number of HTTP 1.x or HTTP 2 servers using hyper, each listening on configured TCP or UNIX socket
+  * includes a [`pin_project` enum wrapping H1 and H2 hyper connections](https://github.com/aaronriekenberg/rust-hyper-server/blob/main/src/server/h1h2conn.rs) for polling and graceful shutdown
+* structured logging with spans for incoming connections and requests
+* static file server using [hyper-staticfile](https://github.com/stephank/hyper-staticfile) 
+* configurable rules using regular expressions for cache control response headers on static files
+* precompressed static files
+* connection tracking
+  * timeouts with graceful shutdown
+  * rest endpoint to get current connection state
+  * historical connection metrics
+* generic `handlers::RequestHandler` async trait to build REST-style endpoints
+  * asynchronously run configured shell commands and return response
+  * connection info
+  * request info
+  * version info
 
 ## Github Actions
 When the release build is too slow on your Raspberry Pi: Use [github actions](https://github.com/aaronriekenberg/rust-hyper-server/actions) to cross-compile.
