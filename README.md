@@ -15,8 +15,9 @@ Features:
   * timeouts with graceful shutdown
   * track connection age, requests per connection, configurable connection limit
   * historical connection metrics
-* generic `handlers::RequestHandler` async trait to build REST-style endpoints
+* generic `handlers::RequestHandler` async trait to handle requests
   * asynchronously run configured shell commands and return response as json
+  * static file handler
   * connection info
   * request info
   * version info
