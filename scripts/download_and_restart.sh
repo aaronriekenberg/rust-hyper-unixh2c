@@ -39,6 +39,6 @@ cd target/release
 mv $PROJECT_PATH/rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz .
 tar xvf rust-hyper-server-aarch64-unknown-linux-gnu.tar.gz
 
-sudo setcap cap_net_bind_service=+ep ./rust-hyper-server
+sudo setcap cap_net_bind_service=+ep ./rhs
 
 systemctl --user restart rust-hyper-server.service
