@@ -37,7 +37,7 @@ impl AllCommandsHandler {
 
         let string = INSTANCE
             .get_or_try_init(|| async move {
-                let commands = crate::config::instance().command_configuration().commands();
+                let commands = &crate::config::instance().command_configuration.commands;
                 serde_json::to_string(commands)
             })
             .await
@@ -81,8 +81,8 @@ struct RunCommandSemapore {
 impl RunCommandSemapore {
     fn new(command_configuration: &crate::config::CommandConfiguration) -> Arc<Self> {
         Arc::new(Self {
-            semapore: Semaphore::new(command_configuration.max_concurrent_commands()),
-            acquire_timeout: command_configuration.semaphore_acquire_timeout(),
+            semapore: Semaphore::new(command_configuration.max_concurrent_commands),
+            acquire_timeout: command_configuration.semaphore_acquire_timeout,
         })
     }
 
@@ -120,10 +120,10 @@ impl RunCommandHandler {
     }
 
     async fn run_command(&self) -> Result<std::process::Output, std::io::Error> {
-        let output = Command::new(self.command_info.command())
+        let output = Command::new(&self.command_info.command)
             .kill_on_drop(true)
             .stdin(Stdio::null())
-            .args(self.command_info.args())
+            .args(&self.command_info.args)
             .output()
             .await?;
 
@@ -183,9 +183,9 @@ impl RequestHandler for RunCommandHandler {
 }
 
 pub async fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
-    let command_configuration = crate::config::instance().command_configuration();
+    let command_configuration = &crate::config::instance().command_configuration;
 
-    let mut routes: Vec<RouteInfo> = Vec::with_capacity(1 + command_configuration.commands().len());
+    let mut routes: Vec<RouteInfo> = Vec::with_capacity(1 + command_configuration.commands.len());
 
     routes.push(RouteInfo {
         method: &Method::GET,
@@ -195,8 +195,8 @@ pub async fn create_routes() -> anyhow::Result<Vec<RouteInfo>> {
 
     let run_command_semaphore = RunCommandSemapore::new(command_configuration);
 
-    for command_info in command_configuration.commands() {
-        let path_suffix = PathBuf::from("commands").join(command_info.id());
+    for command_info in &command_configuration.commands {
+        let path_suffix = PathBuf::from("commands").join(&command_info.id);
 
         routes.push(RouteInfo {
             method: &Method::GET,

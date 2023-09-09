@@ -96,26 +96,26 @@ pub struct StaticFileRulesService {
 
 impl StaticFileRulesService {
     fn new() -> anyhow::Result<Self> {
-        let static_file_configuration = crate::config::instance().static_file_configuration();
+        let static_file_configuration = &crate::config::instance().static_file_configuration;
 
         let mut cache_rules: Vec<Box<dyn CacheRule>> =
-            Vec::with_capacity(static_file_configuration.cache_rules().len());
+            Vec::with_capacity(static_file_configuration.cache_rules.len());
 
-        for cache_rule in static_file_configuration.cache_rules() {
-            let path_regex = regex::Regex::new(cache_rule.path_regex())
+        for cache_rule in &static_file_configuration.cache_rules {
+            let path_regex = regex::Regex::new(&cache_rule.path_regex)
                 .context("StaticFileRulesService::new: error parsing regex")?;
 
-            match cache_rule.rule_type() {
+            match cache_rule.rule_type {
                 StaticFileCacheRuleType::FixedTime => {
                     cache_rules.push(Box::new(FixedTimeCacheHeaderRule::new(
                         path_regex,
-                        cache_rule.duration(),
+                        cache_rule.duration,
                     )));
                 }
                 StaticFileCacheRuleType::ModTimePlusDelta => {
                     cache_rules.push(Box::new(ModificationTimePlusDeltaCacheHeaderRule::new(
                         path_regex,
-                        cache_rule.duration(),
+                        cache_rule.duration,
                     )));
                 }
             }

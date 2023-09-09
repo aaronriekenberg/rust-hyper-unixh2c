@@ -1,7 +1,5 @@
 mod internal;
 
-use getset::CopyGetters;
-
 use tokio::{
     sync::{OnceCell, RwLock},
     time::{Duration, Instant},
@@ -26,15 +24,13 @@ impl ConnectionID {
     }
 }
 
-#[derive(Clone, Debug, CopyGetters)]
-#[getset(get_copy = "pub")]
+#[derive(Clone, Debug)]
 pub struct ConnectionInfo {
-    id: ConnectionID,
-    creation_time: SystemTime,
-    creation_instant: Instant,
-    server_protocol: ServerProtocol,
-    server_socket_type: ServerSocketType,
-    #[getset(skip)]
+    pub id: ConnectionID,
+    pub creation_time: SystemTime,
+    pub creation_instant: Instant,
+    pub server_protocol: ServerProtocol,
+    pub server_socket_type: ServerSocketType,
     num_requests: Arc<AtomicUsize>,
 }
 
@@ -63,13 +59,10 @@ impl ConnectionInfo {
     }
 }
 
-#[derive(CopyGetters)]
-#[getset(get_copy = "pub")]
 pub struct ConnectionGuard {
-    id: ConnectionID,
-    server_protocol: ServerProtocol,
-    server_socket_type: ServerSocketType,
-    #[getset(skip)]
+    pub id: ConnectionID,
+    pub server_protocol: ServerProtocol,
+    pub server_socket_type: ServerSocketType,
     num_requests: Arc<AtomicUsize>,
 }
 

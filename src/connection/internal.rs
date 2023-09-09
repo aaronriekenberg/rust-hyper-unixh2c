@@ -51,8 +51,8 @@ impl ConnectionTrackerState {
         Self {
             next_connection_id: 1,
             connection_limit: crate::config::instance()
-                .server_configuration()
-                .connection_limit(),
+                .server_configuration
+                .connection_limit,
             ..Default::default()
         }
     }

@@ -48,12 +48,12 @@ struct StaticFileHandler {
 
 impl StaticFileHandler {
     fn new() -> anyhow::Result<Self> {
-        let static_file_configuration = crate::config::instance().static_file_configuration();
-        let root = Path::new(static_file_configuration.path());
+        let static_file_configuration = &crate::config::instance().static_file_configuration;
+        let root = Path::new(&static_file_configuration.path);
 
         let mut resolver = Resolver::new(root);
-        resolver.allowed_encodings.gzip = static_file_configuration.precompressed_gz();
-        resolver.allowed_encodings.br = static_file_configuration.precompressed_br();
+        resolver.allowed_encodings.gzip = static_file_configuration.precompressed_gz;
+        resolver.allowed_encodings.br = static_file_configuration.precompressed_br;
 
         debug!(
             "resolver.allowed_encodings = {:?}",
@@ -62,9 +62,9 @@ impl StaticFileHandler {
 
         Ok(Self {
             resolver,
-            client_error_page_path: static_file_configuration.client_error_page_path(),
-            client_error_page_cache_duration: *static_file_configuration
-                .client_error_page_cache_duration(),
+            client_error_page_path: &static_file_configuration.client_error_page_path,
+            client_error_page_cache_duration: static_file_configuration
+                .client_error_page_cache_duration,
             static_file_rules_service: crate::static_file::rules_service_instance(),
         })
     }
@@ -135,7 +135,7 @@ impl StaticFileHandler {
 
         let resolve_result = self
             .resolver
-            .resolve_request(request.hyper_request())
+            .resolve_request(&request.hyper_request)
             .await
             .map_err(StaticFileHandlerError::ResolveRequest)?;
 
@@ -154,7 +154,7 @@ impl StaticFileHandler {
         debug!("cache_headers = {:?}", cache_headers);
 
         let response = hyper_staticfile::ResponseBuilder::new()
-            .request(request.hyper_request())
+            .request(&request.hyper_request)
             .cache_headers(cache_headers)
             .build(resolve_result)
             .map_err(StaticFileHandlerError::BuildResponse)?;

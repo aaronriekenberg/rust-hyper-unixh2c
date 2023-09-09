@@ -31,7 +31,7 @@ impl UnixServer {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        let path = self.listener_configuration.bind_address();
+        let path = &self.listener_configuration.bind_address;
 
         // do not fail on remove error, the path may not exist.
         let remove_result = tokio::fs::remove_file(path).await;
@@ -51,10 +51,7 @@ impl UnixServer {
 
             if let Some(connection) = self
                 .connection_tracker
-                .add_connection(
-                    self.listener_configuration.protocol(),
-                    ServerSocketType::Unix,
-                )
+                .add_connection(self.listener_configuration.protocol, ServerSocketType::Unix)
                 .await
             {
                 self.connection_handler

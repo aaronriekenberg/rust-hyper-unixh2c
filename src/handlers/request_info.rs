@@ -25,7 +25,7 @@ struct RequestFields<'a> {
 
 impl<'a> From<&'a HttpRequest> for RequestFields<'a> {
     fn from(request: &'a HttpRequest) -> Self {
-        let hyper_request = request.hyper_request();
+        let hyper_request = &request.hyper_request;
 
         let http_version = match hyper_request.version() {
             Version::HTTP_09 => "HTTP/0.9",
@@ -37,10 +37,10 @@ impl<'a> From<&'a HttpRequest> for RequestFields<'a> {
         };
 
         Self {
-            connection_id: request.connection_id().as_usize(),
+            connection_id: request.connection_id.as_usize(),
             http_version,
             method: hyper_request.method().as_str(),
-            request_id: request.request_id().as_usize(),
+            request_id: request.request_id.as_usize(),
             request_uri_path: hyper_request.uri().path(),
         }
     }
@@ -51,7 +51,7 @@ type SortedRequestHeaders<'a> = BTreeMap<&'a str, &'a str>;
 impl<'a> From<&'a HttpRequest> for SortedRequestHeaders<'a> {
     fn from(request: &'a HttpRequest) -> Self {
         request
-            .hyper_request()
+            .hyper_request
             .headers()
             .iter()
             .map(|(key, value)| (key.as_str(), value.to_str().unwrap_or("[Unknown]")))

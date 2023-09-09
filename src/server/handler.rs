@@ -37,11 +37,11 @@ impl ConnectionHandler {
         request_handler: Box<dyn RequestHandler>,
         request_id_factory: RequestIDFactory,
     ) -> Arc<Self> {
-        let server_configuration = crate::config::instance().server_configuration();
+        let server_configuration = &crate::config::instance().server_configuration;
 
         let connection_timeout_durations = vec![
-            server_configuration.connection_max_lifetime(),
-            server_configuration.connection_graceful_shutdown_timeout(),
+            server_configuration.connection_max_lifetime,
+            server_configuration.connection_graceful_shutdown_timeout,
         ];
 
         debug!(
@@ -103,9 +103,9 @@ impl ConnectionHandler {
         name = "conn",
         skip_all,
         fields(
-            id = connection.id().as_usize(),
-            sock = ?connection.server_socket_type(),
-            proto = ?connection.server_protocol(),
+            id = connection.id.as_usize(),
+            sock = ?connection.server_socket_type,
+            proto = ?connection.server_protocol,
         )
     )]
     async fn handle_connection(
@@ -121,11 +121,11 @@ impl ConnectionHandler {
             let request_id = self.request_id_factory.new_request_id();
 
             Arc::clone(&self)
-                .handle_request(connection.id(), request_id, hyper_request)
+                .handle_request(connection.id, request_id, hyper_request)
                 .in_current_span()
         });
 
-        let hyper_conn = match connection.server_protocol() {
+        let hyper_conn = match connection.server_protocol {
             ServerProtocol::Http1 => {
                 let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
                 HyperH1OrH2Connection::H1(conn)

@@ -1,17 +1,14 @@
 use anyhow::Context;
 
-use getset::{CopyGetters, Getters};
-
 use tracing::debug;
 
 use serde::{Deserialize, Serialize};
 
 use tokio::{fs::File, io::AsyncReadExt, sync::OnceCell, time::Duration};
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ContextConfiguration {
-    dynamic_route_context: String,
+    pub dynamic_route_context: String,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -32,56 +29,43 @@ pub enum ServerSocketType {
     Unix,
 }
 
-#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ServerListenerConfiguration {
-    #[getset(get_copy = "pub")]
-    protocol: ServerProtocol,
-
-    #[getset(get_copy = "pub")]
-    socket_type: ServerSocketType,
-
-    #[getset(get = "pub")]
-    bind_address: String,
+    pub protocol: ServerProtocol,
+    pub socket_type: ServerSocketType,
+    pub bind_address: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ServerConfiguration {
-    #[getset(get = "pub")]
-    listeners: Vec<ServerListenerConfiguration>,
+    pub listeners: Vec<ServerListenerConfiguration>,
 
-    #[getset(get_copy = "pub")]
-    connection_limit: usize,
+    pub connection_limit: usize,
 
-    #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
-    connection_max_lifetime: Duration,
+    pub connection_max_lifetime: Duration,
 
-    #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
-    connection_graceful_shutdown_timeout: Duration,
+    pub connection_graceful_shutdown_timeout: Duration,
 }
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CommandInfo {
-    id: String,
-    description: String,
-    command: String,
+    pub id: String,
+    pub description: String,
+    pub command: String,
     #[serde(default)]
-    args: Vec<String>,
+    pub args: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CommandConfiguration {
-    #[getset(get_copy = "pub")]
-    max_concurrent_commands: usize,
+    pub max_concurrent_commands: usize,
 
-    #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
-    semaphore_acquire_timeout: Duration,
+    pub semaphore_acquire_timeout: Duration,
 
-    #[getset(get = "pub")]
-    commands: Vec<CommandInfo>,
+    pub commands: Vec<CommandInfo>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -93,49 +77,39 @@ pub enum StaticFileCacheRuleType {
     FixedTime,
 }
 
-#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StaticFileCacheRule {
-    #[getset(get = "pub")]
-    path_regex: String,
+    pub path_regex: String,
 
-    #[getset(get_copy = "pub")]
-    rule_type: StaticFileCacheRuleType,
+    pub rule_type: StaticFileCacheRuleType,
 
-    #[getset(get_copy = "pub")]
     #[serde(with = "humantime_serde")]
-    duration: Duration,
+    pub duration: Duration,
 }
 
-#[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StaticFileConfiguration {
-    #[getset(get = "pub")]
-    path: String,
+    pub path: String,
 
-    #[getset(get_copy = "pub")]
-    precompressed_br: bool,
+    pub precompressed_br: bool,
 
-    #[getset(get_copy = "pub")]
-    precompressed_gz: bool,
+    pub precompressed_gz: bool,
 
-    #[getset(get = "pub")]
-    client_error_page_path: String,
+    pub client_error_page_path: String,
 
-    #[getset(get = "pub")]
     #[serde(with = "humantime_serde")]
     #[serde(default)]
-    client_error_page_cache_duration: Option<Duration>,
+    pub client_error_page_cache_duration: Option<Duration>,
 
-    #[getset(get = "pub")]
-    cache_rules: Vec<StaticFileCacheRule>,
+    pub cache_rules: Vec<StaticFileCacheRule>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Configuration {
-    context_configuration: ContextConfiguration,
-    server_configuration: ServerConfiguration,
-    command_configuration: CommandConfiguration,
-    static_file_configuration: StaticFileConfiguration,
+    pub context_configuration: ContextConfiguration,
+    pub server_configuration: ServerConfiguration,
+    pub command_configuration: CommandConfiguration,
+    pub static_file_configuration: StaticFileConfiguration,
 }
 
 static CONFIGURATION_INSTANCE: OnceCell<Configuration> = OnceCell::const_new();

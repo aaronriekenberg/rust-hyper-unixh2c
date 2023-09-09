@@ -29,8 +29,8 @@ struct RouteKey<'a> {
 impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
     fn from(http_request: &'a HttpRequest) -> Self {
         Self {
-            method: http_request.hyper_request().method(),
-            path: Cow::from(http_request.hyper_request().uri().path()),
+            method: http_request.hyper_request.method(),
+            path: Cow::from(http_request.hyper_request.uri().path()),
         }
     }
 }
@@ -51,9 +51,9 @@ impl Router {
         };
 
         let context_path = Path::new(
-            crate::config::instance()
-                .context_configuration()
-                .dynamic_route_context(),
+            &crate::config::instance()
+                .context_configuration
+                .dynamic_route_context,
         );
 
         for route in routes {
