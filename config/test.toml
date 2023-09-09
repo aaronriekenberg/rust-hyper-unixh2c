@@ -3,8 +3,8 @@ dynamic_route_context = "/api/v1"
 
 [server_configuration]
 listeners = [
-    { server_protocol = "HTTP2", server_socket_type = "UNIX", bind_address = "./socket" },
-    { server_protocol = "HTTP1", server_socket_type = "TCP", bind_address = "[::]:8080" },
+    { protocol = "HTTP2", socket_type = "UNIX", bind_address = "./socket" },
+    { protocol = "HTTP1", socket_type = "TCP", bind_address = "[::]:8080" },
 ]
 connection_limit = 100
 connection_max_lifetime = "2m"

@@ -3,8 +3,8 @@ dynamic_route_context = "/api/v1"
 
 [server_configuration]
 listeners = [
-    { server_protocol = "HTTP1", server_socket_type = "UNIX", bind_address = "/home/aaron/rust-hyper-server/socket" },
-    { server_protocol = "HTTP1", server_socket_type = "TCP", bind_address = "[::]:80" },
+    { protocol = "HTTP1", socket_type = "UNIX", bind_address = "/home/aaron/rust-hyper-server/socket" },
+    { protocol = "HTTP1", socket_type = "TCP", bind_address = "[::]:80" },
 ]
 connection_limit = 200
 connection_max_lifetime = "2m"

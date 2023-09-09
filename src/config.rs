@@ -35,10 +35,10 @@ pub enum ServerSocketType {
 #[derive(Debug, Deserialize, Serialize, CopyGetters, Getters)]
 pub struct ServerListenerConfiguration {
     #[getset(get_copy = "pub")]
-    server_protocol: ServerProtocol,
+    protocol: ServerProtocol,
 
     #[getset(get_copy = "pub")]
-    server_socket_type: ServerSocketType,
+    socket_type: ServerSocketType,
 
     #[getset(get = "pub")]
     bind_address: String,

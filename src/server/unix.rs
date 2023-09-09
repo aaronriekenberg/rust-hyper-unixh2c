@@ -52,7 +52,7 @@ impl UnixServer {
             if let Some(connection) = self
                 .connection_tracker
                 .add_connection(
-                    self.listener_configuration.server_protocol(),
+                    self.listener_configuration.protocol(),
                     ServerSocketType::Unix,
                 )
                 .await
