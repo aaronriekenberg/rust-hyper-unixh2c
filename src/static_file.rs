@@ -8,8 +8,6 @@ use std::{fmt::Debug, time::SystemTime};
 
 use crate::config::StaticFileCacheRuleType;
 
-static RULES_SERVICE_INSTANCE: OnceCell<StaticFileRulesService> = OnceCell::const_new();
-
 trait CacheRule: Send + Sync + Debug {
     fn matches(&self, resolved_path: &str) -> bool;
 
@@ -139,6 +137,8 @@ impl StaticFileRulesService {
             .unwrap_or(None)
     }
 }
+
+static RULES_SERVICE_INSTANCE: OnceCell<StaticFileRulesService> = OnceCell::const_new();
 
 pub fn create_rules_service_instance() -> anyhow::Result<()> {
     let static_file_rules_service = StaticFileRulesService::new()?;
