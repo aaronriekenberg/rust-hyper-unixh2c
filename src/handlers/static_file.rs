@@ -70,20 +70,19 @@ impl StaticFileHandler {
         &self,
         original_request: &HttpRequest,
     ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
-        let client_error_page_request = hyper::http::Request::get(self.client_error_page_path);
+        let mut client_error_page_request = hyper::http::Request::get(self.client_error_page_path);
 
         // copy ACCEPT_ENCODING header from original request
         // so we can try to use gz/bz client error page if possible.
-        let client_error_page_request = match original_request
+        if let Some(accept_encoding_header_value) = original_request
             .hyper_request
             .headers()
             .get(hyper::http::header::ACCEPT_ENCODING)
         {
-            None => client_error_page_request,
-            Some(accept_encoding_header_value) => client_error_page_request.header(
+            client_error_page_request = client_error_page_request.header(
                 hyper::http::header::ACCEPT_ENCODING,
                 accept_encoding_header_value,
-            ),
+            )
         };
 
         let client_error_page_request = client_error_page_request
