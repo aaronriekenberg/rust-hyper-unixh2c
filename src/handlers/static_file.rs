@@ -24,6 +24,9 @@ fn duration_to_u32_seconds(duration: Duration) -> u32 {
 
 #[derive(thiserror::Error, Debug)]
 enum StaticFileHandlerError {
+    #[error("client error page build request error: {0}")]
+    ClientErrorPageBuildRequest(hyper::http::Error),
+
     #[error("client error page resolve error: {0}")]
     ClientErrorPageResolveRequest(std::io::Error),
 
@@ -65,10 +68,27 @@ impl StaticFileHandler {
 
     async fn build_client_error_page_response(
         &self,
+        original_request: &HttpRequest,
     ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
-        let client_error_page_request = hyper::http::Request::get(self.client_error_page_path)
+        let client_error_page_request = hyper::http::Request::get(self.client_error_page_path);
+
+        // copy ACCEPT_ENCODING header from original request
+        // so we can try to use gz/bz client error page if possible.
+        let client_error_page_request = match original_request
+            .hyper_request
+            .headers()
+            .get(hyper::http::header::ACCEPT_ENCODING)
+        {
+            None => client_error_page_request,
+            Some(accept_encoding_header_value) => client_error_page_request.header(
+                hyper::http::header::ACCEPT_ENCODING,
+                accept_encoding_header_value,
+            ),
+        };
+
+        let client_error_page_request = client_error_page_request
             .body(())
-            .unwrap();
+            .map_err(StaticFileHandlerError::ClientErrorPageBuildRequest)?;
 
         let resolve_result = self
             .resolver
@@ -137,7 +157,7 @@ impl StaticFileHandler {
             ResolveResult::NotFound | ResolveResult::PermissionDenied
         ) || self.block_dot_paths(&resolve_result)
         {
-            return self.build_client_error_page_response().await;
+            return self.build_client_error_page_response(request).await;
         }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
