@@ -97,8 +97,7 @@ pub struct StaticFileConfiguration {
 
     pub client_error_page_path: String,
 
-    #[serde(with = "humantime_serde")]
-    #[serde(default)]
+    #[serde(default, with = "humantime_serde")]
     pub client_error_page_cache_duration: Option<Duration>,
 
     pub cache_rules: Vec<StaticFileCacheRule>,
