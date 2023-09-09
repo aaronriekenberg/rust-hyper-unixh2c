@@ -37,16 +37,18 @@ pub struct ServerListenerConfiguration {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ServerConnectionConfiguration {
+    pub limit: usize,
+    #[serde(with = "humantime_serde")]
+    pub max_lifetime: Duration,
+    #[serde(with = "humantime_serde")]
+    pub graceful_shutdown_timeout: Duration,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ServerConfiguration {
     pub listeners: Vec<ServerListenerConfiguration>,
-
-    pub connection_limit: usize,
-
-    #[serde(with = "humantime_serde")]
-    pub connection_max_lifetime: Duration,
-
-    #[serde(with = "humantime_serde")]
-    pub connection_graceful_shutdown_timeout: Duration,
+    pub connection: ServerConnectionConfiguration,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

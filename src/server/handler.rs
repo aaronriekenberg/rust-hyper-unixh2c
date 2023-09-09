@@ -40,8 +40,8 @@ impl ConnectionHandler {
         let server_configuration = &crate::config::instance().server_configuration;
 
         let connection_timeout_durations = vec![
-            server_configuration.connection_max_lifetime,
-            server_configuration.connection_graceful_shutdown_timeout,
+            server_configuration.connection.max_lifetime,
+            server_configuration.connection.graceful_shutdown_timeout,
         ];
 
         debug!(
