@@ -80,26 +80,22 @@ pub enum StaticFileCacheRuleType {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StaticFileCacheRule {
     pub path_regex: String,
-
     pub rule_type: StaticFileCacheRuleType,
-
     #[serde(with = "humantime_serde")]
     pub duration: Duration,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct StaticFilePrecompressedConfiguration {
+    pub br: bool,
+    pub gz: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StaticFileConfiguration {
-    pub path: String,
-
-    pub precompressed_br: bool,
-
-    pub precompressed_gz: bool,
-
+    pub root: String,
+    pub precompressed: StaticFilePrecompressedConfiguration,
     pub client_error_page_path: String,
-
-    #[serde(default, with = "humantime_serde")]
-    pub client_error_page_cache_duration: Option<Duration>,
-
     pub cache_rules: Vec<StaticFileCacheRule>,
 }
 
@@ -107,8 +103,8 @@ pub struct StaticFileConfiguration {
 pub struct Configuration {
     pub context_configuration: ContextConfiguration,
     pub server_configuration: ServerConfiguration,
-    pub command_configuration: CommandConfiguration,
     pub static_file_configuration: StaticFileConfiguration,
+    pub command_configuration: CommandConfiguration,
 }
 
 static CONFIGURATION_INSTANCE: OnceCell<Configuration> = OnceCell::const_new();

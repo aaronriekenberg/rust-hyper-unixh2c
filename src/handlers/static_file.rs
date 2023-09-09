@@ -8,8 +8,6 @@ use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
 use tracing::{debug, warn};
 
-use std::path::Path;
-
 use tokio::time::Duration;
 
 use crate::{
@@ -42,18 +40,16 @@ enum StaticFileHandlerError {
 struct StaticFileHandler {
     resolver: Resolver<TokioFileOpener>,
     client_error_page_path: &'static str,
-    client_error_page_cache_duration: Option<Duration>,
     static_file_rules_service: &'static StaticFileRulesService,
 }
 
 impl StaticFileHandler {
     fn new() -> anyhow::Result<Self> {
         let static_file_configuration = &crate::config::instance().static_file_configuration;
-        let root = Path::new(&static_file_configuration.path);
 
-        let mut resolver = Resolver::new(root);
-        resolver.allowed_encodings.gzip = static_file_configuration.precompressed_gz;
-        resolver.allowed_encodings.br = static_file_configuration.precompressed_br;
+        let mut resolver = Resolver::new(&static_file_configuration.root);
+        resolver.allowed_encodings.gzip = static_file_configuration.precompressed.gz;
+        resolver.allowed_encodings.br = static_file_configuration.precompressed.br;
 
         debug!(
             "resolver.allowed_encodings = {:?}",
@@ -63,8 +59,6 @@ impl StaticFileHandler {
         Ok(Self {
             resolver,
             client_error_page_path: &static_file_configuration.client_error_page_path,
-            client_error_page_cache_duration: static_file_configuration
-                .client_error_page_cache_duration,
             static_file_rules_service: crate::static_file::rules_service_instance(),
         })
     }
@@ -84,10 +78,7 @@ impl StaticFileHandler {
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
-            .cache_headers(
-                self.client_error_page_cache_duration
-                    .map(duration_to_u32_seconds),
-            )
+            .cache_headers(self.build_cache_headers(&resolve_result))
             .build(resolve_result)
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 
