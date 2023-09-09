@@ -13,7 +13,10 @@ static RULES_SERVICE_INSTANCE: OnceCell<StaticFileRulesService> = OnceCell::cons
 trait CacheRule: Send + Sync + Debug {
     fn matches(&self, resolved_path: &str) -> bool;
 
-    fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration;
+    fn build_cache_header(
+        &self,
+        resolved_file: &hyper_staticfile::ResolvedFile,
+    ) -> Option<Duration>;
 }
 
 #[derive(Debug)]
@@ -36,8 +39,8 @@ impl CacheRule for FixedTimeCacheHeaderRule {
         self.path_regex.is_match(resolved_path)
     }
 
-    fn build_cache_header(&self, _: &hyper_staticfile::ResolvedFile) -> Duration {
-        self.file_cache_duration
+    fn build_cache_header(&self, _: &hyper_staticfile::ResolvedFile) -> Option<Duration> {
+        Some(self.file_cache_duration)
     }
 }
 
@@ -61,9 +64,12 @@ impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
         self.path_regex.is_match(resolved_path)
     }
 
-    fn build_cache_header(&self, resolved_file: &hyper_staticfile::ResolvedFile) -> Duration {
+    fn build_cache_header(
+        &self,
+        resolved_file: &hyper_staticfile::ResolvedFile,
+    ) -> Option<Duration> {
         match resolved_file.modified {
-            None => Duration::from_secs(0),
+            None => Some(Duration::from_secs(0)),
             Some(modified) => {
                 let now = SystemTime::now();
 
@@ -77,7 +83,7 @@ impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
                     file_expiration, request_cache_duration
                 );
 
-                request_cache_duration
+                Some(request_cache_duration)
             }
         }
     }
@@ -130,6 +136,7 @@ impl StaticFileRulesService {
             .iter()
             .find(|rule| rule.matches(str_path))
             .map(|rule| rule.build_cache_header(resolved_file))
+            .unwrap_or(None)
     }
 }
 
