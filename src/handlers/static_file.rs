@@ -18,10 +18,6 @@ use crate::{
     static_file::StaticFileRulesService,
 };
 
-fn duration_to_u32_seconds(duration: Duration) -> u32 {
-    duration.as_secs().try_into().unwrap_or_default()
-}
-
 #[derive(thiserror::Error, Debug)]
 enum StaticFileHandlerError {
     #[error("client error page build request error: {0}")]
@@ -126,6 +122,10 @@ impl StaticFileHandler {
     }
 
     fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
+        fn duration_to_u32_seconds(duration: Duration) -> u32 {
+            duration.as_secs().try_into().unwrap_or_default()
+        }
+
         match resolve_result {
             ResolveResult::Found(resolved_file) => self
                 .static_file_rules_service
