@@ -13,8 +13,8 @@ root = "/home/aaron/aaronr.digital"
 precompressed = { br = false, gz = true }
 client_error_page_path = "/notfound.html"
 cache_rules = [
-    { path_regex = '^notfound.html', rule_type = "FIXED_TIME", duration = "5m" },
-    { path_regex = '^vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15m" },
+    { path_regex = '^/?notfound\.html', rule_type = "FIXED_TIME", duration = "5m" },
+    { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15m" },
     { path_regex = '.*', rule_type = "FIXED_TIME", duration = "1h" },
 ]
 
