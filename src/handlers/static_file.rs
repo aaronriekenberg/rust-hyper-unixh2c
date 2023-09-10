@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use http_body_util::BodyExt;
 
-use hyper::http::{Response, StatusCode};
+use hyper::http::{header, Request as HyperHttpRequest, Response, StatusCode};
 
 use hyper_staticfile::{vfs::TokioFileOpener, ResolveResult, Resolver};
 
@@ -47,7 +47,7 @@ struct StaticFileHandler {
 }
 
 impl StaticFileHandler {
-    fn new() -> anyhow::Result<Self> {
+    fn new() -> Self {
         let static_file_configuration = &crate::config::instance().static_file_configuration;
 
         let mut resolver = Resolver::new(&static_file_configuration.root);
@@ -59,31 +59,29 @@ impl StaticFileHandler {
             resolver.allowed_encodings
         );
 
-        Ok(Self {
+        Self {
             resolver,
             client_error_page_path: &static_file_configuration.client_error_page_path,
             static_file_rules_service: crate::static_file::rules_service_instance(),
-        })
+        }
     }
 
     async fn build_client_error_page_response(
         &self,
         original_request: &HttpRequest,
     ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
-        let mut client_error_page_request = hyper::http::Request::get(self.client_error_page_path);
+        let mut client_error_page_request = HyperHttpRequest::get(self.client_error_page_path);
 
         // copy ACCEPT_ENCODING header from original request
         // so we can try to use gz/bz client error page if possible.
         if let Some(accept_encoding_header_value) = original_request
             .hyper_request
             .headers()
-            .get(hyper::http::header::ACCEPT_ENCODING)
+            .get(header::ACCEPT_ENCODING)
         {
-            client_error_page_request = client_error_page_request.header(
-                hyper::http::header::ACCEPT_ENCODING,
-                accept_encoding_header_value,
-            )
-        };
+            client_error_page_request = client_error_page_request
+                .header(header::ACCEPT_ENCODING, accept_encoding_header_value);
+        }
 
         let client_error_page_request = client_error_page_request
             .body(())
@@ -190,6 +188,6 @@ impl RequestHandler for StaticFileHandler {
     }
 }
 
-pub async fn create_default_route() -> anyhow::Result<Box<dyn RequestHandler>> {
-    Ok(Box::new(StaticFileHandler::new()?))
+pub fn create_default_route() -> Box<dyn RequestHandler> {
+    Box::new(StaticFileHandler::new())
 }
