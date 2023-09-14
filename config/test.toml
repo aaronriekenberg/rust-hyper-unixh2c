@@ -6,16 +6,16 @@ listeners = [
     { protocol = "HTTP2", socket_type = "UNIX", bind_address = "./socket" },
     { protocol = "HTTP1", socket_type = "TCP", bind_address = "[::]:8080" },
 ]
-connection = { limit = 100, max_lifetime = "2m", graceful_shutdown_timeout = "5s" }
+connection = { limit = 100, max_lifetime = "2min", graceful_shutdown_timeout = "5sec" }
 
 [static_file_configuration]
 root = "/Users/aaron/vscode/aaronr.digital"
 precompressed = { br = false, gz = false }
 client_error_page_path = "/notfound.html"
 cache_rules = [
-    { path_regex = '^/?notfound\.html', rule_type = "FIXED_TIME", duration = "5m" },
-    { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15m" },
-    { path_regex = '.*', rule_type = "FIXED_TIME", duration = "1h" },
+    { path_regex = '^/?notfound\.html', rule_type = "FIXED_TIME", duration = "5min" },
+    { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15min" },
+    { path_regex = '.*', rule_type = "FIXED_TIME", duration = "1hour" },
 ]
 
 [command_configuration]
