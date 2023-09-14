@@ -103,9 +103,9 @@ pub struct StaticFileConfiguration {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Configuration {
-    pub context_configuration: ContextConfiguration,
     pub server_configuration: ServerConfiguration,
     pub static_file_configuration: StaticFileConfiguration,
+    pub context_configuration: ContextConfiguration,
     pub command_configuration: CommandConfiguration,
 }
 
