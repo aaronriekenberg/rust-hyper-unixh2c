@@ -20,7 +20,7 @@ dynamic_route_context = "/api/v1"
 
 [command_configuration]
 max_concurrent_commands = 1
-semaphore_acquire_timeout = "200ms"
+semaphore_acquire_timeout = "200msec"
 commands = [
     { id = "sleep", description = "sleep", command = "/bin/sleep", args = [
         "5",

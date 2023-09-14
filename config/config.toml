@@ -20,7 +20,7 @@ dynamic_route_context = "/api/v1"
 
 [command_configuration]
 max_concurrent_commands = 10
-semaphore_acquire_timeout = "200ms"
+semaphore_acquire_timeout = "200msec"
 commands = [
     { id = "chronyc_sources", description = "chronyc sources", command = "/usr/bin/chronyc", args = [
         "-n",
