@@ -376,11 +376,13 @@ dependencies = [
 [[package]]
 name = "hyper-util"
 version = "0.0.0"
-source = "git+https://github.com/hyperium/hyper-util.git#229757e565e0935a7a3b1d0f9e9ab88d9310e779"
+source = "git+https://github.com/hyperium/hyper-util.git#450cca83f141b263a4add02938ffeb5518cbddc2"
 dependencies = [
+ "bytes",
  "futures-channel",
  "futures-util",
  "http",
+ "http-body",
  "hyper",
  "once_cell",
  "pin-project-lite",
@@ -923,9 +925,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.34"
+version = "2.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88ec6cdb6a4c16306eccf52ccd8d492e4ab64705a15a5016acb205251001bf72"
+checksum = "59bf04c28bee9043ed9ea1e41afc0552288d3aba9c6efdd78903b802926f4879"
 dependencies = [
  "proc-macro2",
  "quote",
