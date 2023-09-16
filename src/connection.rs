@@ -24,7 +24,7 @@ impl ConnectionID {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ConnectionInfo {
     pub id: ConnectionID,
     pub creation_time: SystemTime,
@@ -154,5 +154,5 @@ pub struct ConnectionTrackerState {
     pub connection_limit_hits: usize,
     pub max_connection_age: Duration,
     pub max_requests_per_connection: usize,
-    pub open_connections: Vec<ConnectionInfo>,
+    pub open_connections: Vec<Arc<ConnectionInfo>>,
 }

@@ -42,7 +42,7 @@ impl ConnectionTrackerMetrics {
 pub struct ConnectionTrackerState {
     next_connection_id: usize,
     connection_limit: usize,
-    id_to_connection_info: HashMap<ConnectionID, ConnectionInfo>,
+    id_to_connection_info: HashMap<ConnectionID, Arc<ConnectionInfo>>,
     metrics: ConnectionTrackerMetrics,
 }
 
@@ -84,8 +84,11 @@ impl ConnectionTrackerState {
 
         let connection_id = self.next_connection_id();
 
-        let connection_info =
-            ConnectionInfo::new(connection_id, server_protocol, server_socket_type);
+        let connection_info = Arc::new(ConnectionInfo::new(
+            connection_id,
+            server_protocol,
+            server_socket_type,
+        ));
 
         let num_requests = Arc::clone(&connection_info.num_requests);
 
@@ -151,7 +154,7 @@ impl ConnectionTrackerState {
         )
     }
 
-    pub fn open_connections(&self) -> impl Iterator<Item = &ConnectionInfo> {
+    pub fn open_connections(&self) -> impl Iterator<Item = &Arc<ConnectionInfo>> {
         self.id_to_connection_info.values()
     }
 }

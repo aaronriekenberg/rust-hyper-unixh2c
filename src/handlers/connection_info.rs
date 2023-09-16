@@ -8,7 +8,7 @@ use serde::Serialize;
 
 use tokio::time::Instant;
 
-use std::{collections::BTreeMap, time::Duration};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 use crate::{
     config::{ServerProtocol, ServerSocketType},
@@ -33,8 +33,8 @@ struct ConnectionInfoDTO {
     num_requests: usize,
 }
 
-impl From<ConnectionInfo> for ConnectionInfoDTO {
-    fn from(connection_info: ConnectionInfo) -> Self {
+impl From<Arc<ConnectionInfo>> for ConnectionInfoDTO {
+    fn from(connection_info: Arc<ConnectionInfo>) -> Self {
         // truncate to seconds
         let age = Duration::from_secs(connection_info.age(Instant::now()).as_secs());
 
@@ -64,7 +64,7 @@ struct ConnectionTrackerStateDTO {
 
 impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
     fn from(state: ConnectionTrackerState) -> Self {
-        let id_to_open_connection: BTreeMap<ConnectionID, ConnectionInfo> = state
+        let id_to_open_connection: BTreeMap<ConnectionID, Arc<ConnectionInfo>> = state
             .open_connections
             .into_iter()
             .map(|c| (c.id, c))
