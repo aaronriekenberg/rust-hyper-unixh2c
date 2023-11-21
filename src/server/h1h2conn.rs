@@ -1,5 +1,5 @@
 use hyper::{
-    rt::bounds::Http2ConnExec,
+    rt::bounds::Http2ServerConnExec,
     server::conn::{
         http1::Connection as HyperHTTP1Connection, http2::Connection as HyperHTTP2Connection,
     },
@@ -19,7 +19,7 @@ pub enum HyperH1OrH2Connection<I, S, E>
 where
     I: HyperReadWrite,
     S: HyperHttpService,
-    E: Http2ConnExec<S::Future, ResponseBody>,
+    E: Http2ServerConnExec<S::Future, ResponseBody>,
 {
     H1(#[pin] HyperHTTP1Connection<I, S>),
     H2(#[pin] HyperHTTP2Connection<I, S, E>),
@@ -29,7 +29,7 @@ impl<I, S, E> std::future::Future for HyperH1OrH2Connection<I, S, E>
 where
     I: HyperReadWrite,
     S: HyperHttpService,
-    E: Http2ConnExec<S::Future, ResponseBody>,
+    E: Http2ServerConnExec<S::Future, ResponseBody>,
 {
     type Output = hyper::Result<()>;
 
@@ -48,7 +48,7 @@ impl<I, S, E> HyperH1OrH2Connection<I, S, E>
 where
     I: HyperReadWrite,
     S: HyperHttpService,
-    E: Http2ConnExec<S::Future, ResponseBody>,
+    E: Http2ServerConnExec<S::Future, ResponseBody>,
 {
     pub fn graceful_shutdown(self: Pin<&mut Self>) {
         match self.project() {
