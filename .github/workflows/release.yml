@@ -26,6 +26,8 @@ jobs:
         include:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
