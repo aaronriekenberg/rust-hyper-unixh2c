@@ -4,7 +4,7 @@ use tracing::{debug, warn};
 
 use std::{cmp, collections::HashMap, sync::Arc};
 
-use crate::config::{ServerProtocol, ServerSocketType};
+use crate::config::ServerSocketType;
 
 use super::{ConnectionGuard, ConnectionID, ConnectionInfo};
 
@@ -70,25 +70,20 @@ impl ConnectionTrackerState {
 
     pub fn add_connection(
         &mut self,
-        server_protocol: ServerProtocol,
         server_socket_type: ServerSocketType,
     ) -> Option<ConnectionGuard> {
         if self.new_connection_exceeds_connection_limit() {
-            warn!("add_connection hit connection_limit = {} server_protocol = {:?} server_socket_type = {:?}", 
-                self.connection_limit,
-                server_protocol,
-                server_socket_type);
+            warn!(
+                "add_connection hit connection_limit = {} server_socket_type = {:?}",
+                self.connection_limit, server_socket_type
+            );
             self.metrics.increment_connection_limit_hits();
             return None;
         }
 
         let connection_id = self.next_connection_id();
 
-        let connection_info = Arc::new(ConnectionInfo::new(
-            connection_id,
-            server_protocol,
-            server_socket_type,
-        ));
+        let connection_info = Arc::new(ConnectionInfo::new(connection_id, server_socket_type));
 
         let num_requests = Arc::clone(&connection_info.num_requests);
 
@@ -106,7 +101,6 @@ impl ConnectionTrackerState {
 
         Some(ConnectionGuard::new(
             connection_id,
-            server_protocol,
             server_socket_type,
             num_requests,
         ))

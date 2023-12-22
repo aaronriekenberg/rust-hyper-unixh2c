@@ -13,7 +13,7 @@ use std::{
     time::SystemTime,
 };
 
-use crate::config::{ServerProtocol, ServerSocketType};
+use crate::config::ServerSocketType;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ConnectionID(usize);
@@ -29,22 +29,16 @@ pub struct ConnectionInfo {
     pub id: ConnectionID,
     pub creation_time: SystemTime,
     pub creation_instant: Instant,
-    pub server_protocol: ServerProtocol,
     pub server_socket_type: ServerSocketType,
     num_requests: Arc<AtomicUsize>,
 }
 
 impl ConnectionInfo {
-    fn new(
-        id: ConnectionID,
-        server_protocol: ServerProtocol,
-        server_socket_type: ServerSocketType,
-    ) -> Self {
+    fn new(id: ConnectionID, server_socket_type: ServerSocketType) -> Self {
         Self {
             id,
             creation_time: SystemTime::now(),
             creation_instant: Instant::now(),
-            server_protocol,
             server_socket_type,
             num_requests: Arc::new(AtomicUsize::new(0)),
         }
@@ -61,7 +55,6 @@ impl ConnectionInfo {
 
 pub struct ConnectionGuard {
     pub id: ConnectionID,
-    pub server_protocol: ServerProtocol,
     pub server_socket_type: ServerSocketType,
     num_requests: Arc<AtomicUsize>,
 }
@@ -69,13 +62,11 @@ pub struct ConnectionGuard {
 impl ConnectionGuard {
     fn new(
         id: ConnectionID,
-        server_protocol: ServerProtocol,
         server_socket_type: ServerSocketType,
         num_requests: Arc<AtomicUsize>,
     ) -> Self {
         Self {
             id,
-            server_protocol,
             server_socket_type,
             num_requests,
         }
@@ -116,12 +107,11 @@ impl ConnectionTracker {
 
     pub async fn add_connection(
         &self,
-        server_protocol: ServerProtocol,
         server_socket_type: ServerSocketType,
     ) -> Option<ConnectionGuard> {
         let mut state = self.state.write().await;
 
-        state.add_connection(server_protocol, server_socket_type)
+        state.add_connection(server_socket_type)
     }
 
     async fn remove_connection(&self, connection_id: ConnectionID) {

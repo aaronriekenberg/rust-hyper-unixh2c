@@ -1,11 +1,9 @@
 use hyper::{
     http::{Request, Response},
-    server::conn::http1::Builder as HyperHTTP1Builder,
-    server::conn::http2::Builder as HyperHTTP2Builder,
     service::service_fn,
 };
 
-use hyper_util::rt::TokioExecutor;
+use hyper_util::{rt::TokioExecutor, server::conn::auto::Builder as HyperUtilAutoConnBuilder};
 
 use tokio::{
     pin,
@@ -17,12 +15,11 @@ use tracing::{debug, info, instrument, warn, Instrument};
 use std::{convert::Infallible, sync::Arc};
 
 use crate::{
-    config::ServerProtocol,
     connection::{ConnectionGuard, ConnectionID},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
-    server::{h1h2conn::HyperH1OrH2Connection, utils::HyperReadWrite},
+    server::utils::HyperReadWrite,
 };
 
 pub struct ConnectionHandler {
@@ -105,7 +102,6 @@ impl ConnectionHandler {
         fields(
             id = connection.id.as_usize(),
             sock = ?connection.server_socket_type,
-            proto = ?connection.server_protocol,
         )
     )]
     async fn handle_connection(
@@ -125,17 +121,8 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        let hyper_conn = match connection.server_protocol {
-            ServerProtocol::Http1 => {
-                let conn = HyperHTTP1Builder::new().serve_connection(stream, service);
-                HyperH1OrH2Connection::H1(conn)
-            }
-            ServerProtocol::Http2 => {
-                let conn = HyperHTTP2Builder::new(self.tokio_executor.clone())
-                    .serve_connection(stream, service);
-                HyperH1OrH2Connection::H2(conn)
-            }
-        };
+        let builder = HyperUtilAutoConnBuilder::new(self.tokio_executor.clone());
+        let hyper_conn = builder.serve_connection(stream, service);
         pin!(hyper_conn);
 
         for (iter, sleep_duration) in self.connection_timeout_durations.iter().enumerate() {

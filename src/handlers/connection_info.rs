@@ -11,7 +11,7 @@ use tokio::time::Instant;
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 use crate::{
-    config::{ServerProtocol, ServerSocketType},
+    config::ServerSocketType,
     connection::{ConnectionID, ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{
         response_utils::build_json_response,
@@ -25,7 +25,6 @@ use crate::{
 #[derive(Debug, Serialize)]
 struct ConnectionInfoDTO {
     id: usize,
-    server_protocol: ServerProtocol,
     server_socket_type: ServerSocketType,
     creation_time: String,
     #[serde(with = "humantime_serde")]
@@ -40,7 +39,6 @@ impl From<Arc<ConnectionInfo>> for ConnectionInfoDTO {
 
         Self {
             id: connection_info.id.as_usize(),
-            server_protocol: connection_info.server_protocol,
             server_socket_type: connection_info.server_socket_type,
             creation_time: local_date_time_to_string(&LocalDateTime::from(
                 connection_info.creation_time,

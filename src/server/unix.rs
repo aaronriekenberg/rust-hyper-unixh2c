@@ -51,7 +51,7 @@ impl UnixServer {
 
             if let Some(connection) = self
                 .connection_tracker
-                .add_connection(self.listener_configuration.protocol, ServerSocketType::Unix)
+                .add_connection(ServerSocketType::Unix)
                 .await
             {
                 self.connection_handler

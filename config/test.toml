@@ -1,7 +1,7 @@
 [server_configuration]
 listeners = [
-    { protocol = "HTTP2", socket_type = "UNIX", bind_address = "./socket" },
-    { protocol = "HTTP1", socket_type = "TCP", bind_address = "[::]:8080" },
+    { socket_type = "UNIX", bind_address = "./socket" },
+    { socket_type = "TCP", bind_address = "[::]:8080" },
 ]
 connection = { limit = 100, max_lifetime = "2min", graceful_shutdown_timeout = "5sec" }
 

@@ -53,7 +53,7 @@ impl TCPServer {
 
             if let Some(connection) = self
                 .connection_tracker
-                .add_connection(self.listener_configuration.protocol, ServerSocketType::Tcp)
+                .add_connection(ServerSocketType::Tcp)
                 .await
             {
                 self.connection_handler

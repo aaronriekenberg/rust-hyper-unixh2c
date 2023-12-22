@@ -12,15 +12,6 @@ pub struct ContextConfiguration {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub enum ServerProtocol {
-    #[serde(rename = "HTTP1")]
-    Http1,
-
-    #[serde(rename = "HTTP2")]
-    Http2,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum ServerSocketType {
     #[serde(rename = "TCP")]
     Tcp,
@@ -31,7 +22,6 @@ pub enum ServerSocketType {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ServerListenerConfiguration {
-    pub protocol: ServerProtocol,
     pub socket_type: ServerSocketType,
     pub bind_address: String,
 }
