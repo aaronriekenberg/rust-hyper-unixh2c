@@ -38,12 +38,12 @@ commands = [
         "addr",
     ] },
     { id = "lscpu", description = "lscpu", command = "/usr/bin/lscpu" },
+    { id = "lscpu_e", description = "lscpu -e", command = "/usr/bin/lscpu", args = [ "-e" ] },
     { id = "netstat_an", description = "netstat -an", command = "/usr/bin/netstat", args = [
         "-a",
         "-n",
     ] },
-    { id = "pitemp", description = "pitemp", command = "/home/aaron/repo/raspberrypi/pitemp.sh" },
-    { id = "pithrottle", description = "pithrottle", command = "/home/aaron/repo/raspberrypi/pithrottle.sh" },
+    { id = "sensors", description = "sensors", command = "/usr/bin/sensors" },
     { id = "top", description = "top", command = "/usr/bin/top", args = [
         "-b",
         "-n1",
