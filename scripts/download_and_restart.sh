@@ -16,7 +16,7 @@ while [ $DONE = "false" ] ; do
   RELEASE=$(git describe --abbrev=0 --tags)
   echo "RELEASE=$RELEASE"
 
-  URL="https://github.com/aaronriekenberg/rust-hyper-server/releases/download/${RELEASE}/rhs-aarch64-unknown-linux-gnu.tar.gz"
+  URL="https://github.com/aaronriekenberg/rust-hyper-server/releases/download/${RELEASE}/rhs-${arch}-unknown-linux-gnu.tar.gz"
 
   wget $URL
   WGET_RESULT=$?
@@ -36,8 +36,8 @@ rm -fr target
 mkdir -p target/release
 cd target/release
 
-mv $PROJECT_PATH/rhs-aarch64-unknown-linux-gnu.tar.gz .
-tar xvf rhs-aarch64-unknown-linux-gnu.tar.gz
+mv $PROJECT_PATH/rhs-${arch}-unknown-linux-gnu.tar.gz .
+tar xvf rhs-${arch}-unknown-linux-gnu.tar.gz
 
 sudo setcap cap_net_bind_service=+ep ./rhs
 
