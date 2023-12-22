@@ -38,7 +38,9 @@ commands = [
         "addr",
     ] },
     { id = "lscpu", description = "lscpu", command = "/usr/bin/lscpu" },
-    { id = "lscpu_e", description = "lscpu -e", command = "/usr/bin/lscpu", args = [ "-e" ] },
+    { id = "lscpu_e", description = "lscpu -e", command = "/usr/bin/lscpu", args = [
+        "-e",
+    ] },
     { id = "netstat_an", description = "netstat -an", command = "/usr/bin/netstat", args = [
         "-a",
         "-n",
