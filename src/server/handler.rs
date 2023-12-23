@@ -3,7 +3,7 @@ use hyper::{
     service::service_fn,
 };
 
-use hyper_util::{rt::TokioExecutor, server::conn::auto::Builder as HyperUtilAutoConnBuilder};
+use hyper_util::{rt::TokioExecutor, server::conn::auto::Builder as HyperConnAutoBuilder};
 
 use tokio::{
     pin,
@@ -121,7 +121,8 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        let builder = HyperUtilAutoConnBuilder::new(self.tokio_executor.clone());
+        let builder = HyperConnAutoBuilder::new(self.tokio_executor.clone());
+
         let hyper_conn = builder.serve_connection(stream, service);
         pin!(hyper_conn);
 
