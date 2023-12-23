@@ -27,3 +27,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [build-dependencies]
 vergen = { version = "8", features = ["build", "cargo", "rustc", "si"] }
+
+[lints.rust]
+unsafe_code = "forbid"
