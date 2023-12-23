@@ -65,7 +65,7 @@ impl ConnectionTrackerState {
     }
 
     fn new_connection_exceeds_connection_limit(&self) -> bool {
-        (self.id_to_connection_info.len() + 1) >= self.connection_limit
+        (self.id_to_connection_info.len() + 1) > self.connection_limit
     }
 
     pub fn add_connection(
