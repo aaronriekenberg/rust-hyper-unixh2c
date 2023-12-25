@@ -150,19 +150,19 @@ impl StaticFileHandler {
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if matches!(resolve_result, ResolveResult::MethodNotMatched) {
+        if matches!(resolve_result, ResolveResult::PermissionDenied)
+            || self.block_dot_paths(&resolve_result)
+        {
+            return self
+                .build_client_error_page_response(request, StatusCode::FORBIDDEN)
+                .await;
+        } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
             return self
                 .build_client_error_page_response(request, StatusCode::BAD_REQUEST)
                 .await;
         } else if matches!(resolve_result, ResolveResult::NotFound) {
             return self
                 .build_client_error_page_response(request, StatusCode::NOT_FOUND)
-                .await;
-        } else if matches!(resolve_result, ResolveResult::PermissionDenied)
-            || self.block_dot_paths(&resolve_result)
-        {
-            return self
-                .build_client_error_page_response(request, StatusCode::FORBIDDEN)
                 .await;
         }
 
