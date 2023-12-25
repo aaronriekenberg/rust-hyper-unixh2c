@@ -8,9 +8,9 @@ connection = { limit = 200, max_lifetime = "2min", graceful_shutdown_timeout = "
 [static_file_configuration]
 root = "/home/aaron/aaronr.digital"
 precompressed = { br = false, gz = true }
-client_error_page_path = "/notfound.html"
+client_error_page_path = "/error.html"
 cache_rules = [
-    { path_regex = '^/?notfound\.html', rule_type = "FIXED_TIME", duration = "5min" },
+    { path_regex = '^/?error\.html', rule_type = "FIXED_TIME", duration = "5min" },
     { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15min" },
     { path_regex = '.*', rule_type = "FIXED_TIME", duration = "1hour" },
 ]

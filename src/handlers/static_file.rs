@@ -65,6 +65,7 @@ impl StaticFileHandler {
     async fn build_client_error_page_response(
         &self,
         original_request: &HttpRequest,
+        status_code: StatusCode,
     ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
         let mut client_error_page_request = HyperHttpRequest::get(self.client_error_page_path);
 
@@ -96,7 +97,7 @@ impl StaticFileHandler {
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 
         let (mut parts, body) = response.into_parts();
-        parts.status = StatusCode::NOT_FOUND;
+        parts.status = status_code;
 
         let boxed_body = body.map_err(|e| e.into()).boxed();
 
@@ -149,12 +150,20 @@ impl StaticFileHandler {
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if matches!(
-            resolve_result,
-            ResolveResult::NotFound | ResolveResult::PermissionDenied
-        ) || self.block_dot_paths(&resolve_result)
+        if matches!(resolve_result, ResolveResult::MethodNotMatched) {
+            return self
+                .build_client_error_page_response(request, StatusCode::BAD_REQUEST)
+                .await;
+        } else if matches!(resolve_result, ResolveResult::NotFound) {
+            return self
+                .build_client_error_page_response(request, StatusCode::NOT_FOUND)
+                .await;
+        } else if matches!(resolve_result, ResolveResult::PermissionDenied)
+            || self.block_dot_paths(&resolve_result)
         {
-            return self.build_client_error_page_response(request).await;
+            return self
+                .build_client_error_page_response(request, StatusCode::FORBIDDEN)
+                .await;
         }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
