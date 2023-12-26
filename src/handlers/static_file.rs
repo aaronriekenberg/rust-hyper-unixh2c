@@ -136,6 +136,33 @@ impl StaticFileHandler {
         }
     }
 
+    async fn handle_resolve_errors(
+        &self,
+        request: &HttpRequest,
+        resolve_result: &ResolveResult,
+    ) -> Result<Option<Response<ResponseBody>>, StaticFileHandlerError> {
+        if matches!(resolve_result, ResolveResult::PermissionDenied)
+            || self.block_dot_paths(resolve_result)
+        {
+            return Ok(Some(
+                self.build_client_error_page_response(request, StatusCode::FORBIDDEN)
+                    .await?,
+            ));
+        } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
+            return Ok(Some(
+                self.build_client_error_page_response(request, StatusCode::BAD_REQUEST)
+                    .await?,
+            ));
+        } else if matches!(resolve_result, ResolveResult::NotFound) {
+            return Ok(Some(
+                self.build_client_error_page_response(request, StatusCode::NOT_FOUND)
+                    .await?,
+            ));
+        }
+
+        Ok(None)
+    }
+
     async fn try_handle(
         &self,
         request: &HttpRequest,
@@ -150,20 +177,8 @@ impl StaticFileHandler {
 
         debug!("resolve_result = {:?}", resolve_result);
 
-        if matches!(resolve_result, ResolveResult::PermissionDenied)
-            || self.block_dot_paths(&resolve_result)
-        {
-            return self
-                .build_client_error_page_response(request, StatusCode::FORBIDDEN)
-                .await;
-        } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
-            return self
-                .build_client_error_page_response(request, StatusCode::BAD_REQUEST)
-                .await;
-        } else if matches!(resolve_result, ResolveResult::NotFound) {
-            return self
-                .build_client_error_page_response(request, StatusCode::NOT_FOUND)
-                .await;
+        if let Some(response) = self.handle_resolve_errors(request, &resolve_result).await? {
+            return Ok(response);
         }
 
         let cache_headers = self.build_cache_headers(&resolve_result);
