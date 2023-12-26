@@ -21,13 +21,13 @@ pub trait RequestHandler: Send + Sync {
 pub async fn create_handlers() -> anyhow::Result<Box<dyn RequestHandler>> {
     let mut routes = Vec::new();
 
-    routes.append(&mut commands::create_routes().await?);
+    routes.extend(commands::create_routes().await?);
 
-    routes.append(&mut connection_info::create_routes().await);
+    routes.extend(connection_info::create_routes().await);
 
-    routes.append(&mut request_info::create_routes());
+    routes.extend(request_info::create_routes());
 
-    routes.append(&mut version_info::create_routes().await);
+    routes.extend(version_info::create_routes().await);
 
     let default_route = static_file::create_default_route();
 
