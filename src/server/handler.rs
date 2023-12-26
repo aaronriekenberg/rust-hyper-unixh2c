@@ -85,9 +85,9 @@ impl ConnectionHandler {
             .record("micros", duration.as_micros())
             .record("status", status.as_u16());
 
-        if status.is_success() {
+        if status.is_informational() || status.is_success() || status.is_redirection() {
             debug!("request complete");
-        } else if status.is_informational() || status.is_redirection() || status.is_client_error() {
+        } else if status.is_client_error() {
             info!("request complete");
         } else {
             warn!("request complete");
