@@ -62,6 +62,20 @@ impl StaticFileHandler {
         }
     }
 
+    fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
+        fn duration_to_u32_seconds(duration: Duration) -> u32 {
+            duration.as_secs().try_into().unwrap_or_default()
+        }
+
+        match resolve_result {
+            ResolveResult::Found(resolved_file) => self
+                .static_file_rules_service
+                .build_cache_header(resolved_file)
+                .map(duration_to_u32_seconds),
+            _ => None,
+        }
+    }
+
     async fn build_client_error_page_response(
         &self,
         original_request: &HttpRequest,
@@ -120,20 +134,6 @@ impl StaticFileHandler {
         };
 
         false
-    }
-
-    fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
-        fn duration_to_u32_seconds(duration: Duration) -> u32 {
-            duration.as_secs().try_into().unwrap_or_default()
-        }
-
-        match resolve_result {
-            ResolveResult::Found(resolved_file) => self
-                .static_file_rules_service
-                .build_cache_header(resolved_file)
-                .map(duration_to_u32_seconds),
-            _ => None,
-        }
     }
 
     async fn handle_resolve_errors(
