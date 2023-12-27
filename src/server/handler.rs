@@ -19,7 +19,7 @@ use crate::{
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
-    server::utils::HyperReadWrite,
+    server::HyperReadWrite,
 };
 
 pub struct ConnectionHandler {

@@ -1,7 +1,6 @@
 mod handler;
 mod tcp;
 mod unix;
-mod utils;
 
 use anyhow::Context;
 
@@ -12,6 +11,10 @@ use std::sync::Arc;
 use crate::{config::ServerSocketType, handlers::RequestHandler, request::RequestIDFactory};
 
 use self::{handler::ConnectionHandler, tcp::TCPServer, unix::UnixServer};
+
+trait HyperReadWrite: hyper::rt::Read + hyper::rt::Write + Send + Unpin + 'static {}
+
+impl<T> HyperReadWrite for T where T: hyper::rt::Read + hyper::rt::Write + Send + Unpin + 'static {}
 
 pub struct Server {
     join_set: JoinSet<anyhow::Result<()>>,
