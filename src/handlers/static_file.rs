@@ -141,26 +141,28 @@ impl StaticFileHandler {
         request: &HttpRequest,
         resolve_result: &ResolveResult,
     ) -> Result<Option<Response<ResponseBody>>, StaticFileHandlerError> {
-        if matches!(resolve_result, ResolveResult::PermissionDenied)
-            || self.block_dot_paths(resolve_result)
-        {
-            return Ok(Some(
-                self.build_client_error_page_response(request, StatusCode::FORBIDDEN)
-                    .await?,
-            ));
-        } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
-            return Ok(Some(
-                self.build_client_error_page_response(request, StatusCode::BAD_REQUEST)
-                    .await?,
-            ));
-        } else if matches!(resolve_result, ResolveResult::NotFound) {
-            return Ok(Some(
-                self.build_client_error_page_response(request, StatusCode::NOT_FOUND)
-                    .await?,
-            ));
-        }
-
-        Ok(None)
+        Ok(
+            if matches!(resolve_result, ResolveResult::PermissionDenied)
+                || self.block_dot_paths(resolve_result)
+            {
+                Some(
+                    self.build_client_error_page_response(request, StatusCode::FORBIDDEN)
+                        .await?,
+                )
+            } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
+                Some(
+                    self.build_client_error_page_response(request, StatusCode::BAD_REQUEST)
+                        .await?,
+                )
+            } else if matches!(resolve_result, ResolveResult::NotFound) {
+                Some(
+                    self.build_client_error_page_response(request, StatusCode::NOT_FOUND)
+                        .await?,
+                )
+            } else {
+                None
+            },
+        )
     }
 
     async fn try_handle(
