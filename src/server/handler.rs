@@ -109,7 +109,7 @@ impl ConnectionHandler {
         stream: impl HyperReadWrite,
         connection: ConnectionGuard,
     ) {
-        info!("begin handle_connection");
+        debug!("begin handle_connection");
 
         let service = service_fn(|hyper_request| {
             connection.increment_num_requests();
@@ -143,7 +143,7 @@ impl ConnectionHandler {
             }
         }
 
-        info!(
+        debug!(
             "end handle_connection num_requests = {}",
             connection.num_requests()
         );
