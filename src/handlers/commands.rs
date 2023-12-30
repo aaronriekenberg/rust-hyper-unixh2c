@@ -18,15 +18,13 @@ use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use crate::{
     handlers::{
-        response_utils::{
-            build_json_body_response, build_json_response, build_status_code_response,
-            static_string_response_body,
-        },
-        route::RouteInfo,
-        time_utils::current_local_date_time_string,
-        HttpRequest, RequestHandler, ResponseBody,
+        route::RouteInfo, time_utils::current_local_date_time_string, HttpRequest, RequestHandler,
+        ResponseBody,
     },
-    response::CacheControl,
+    response::{
+        build_json_body_response, build_json_response, build_status_code_response,
+        static_string_response_body, CacheControl,
+    },
 };
 
 struct AllCommandsHandler;

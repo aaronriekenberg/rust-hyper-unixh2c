@@ -11,10 +11,8 @@ use tracing::{debug, warn};
 use tokio::time::Duration;
 
 use crate::{
-    handlers::{
-        response_utils::build_status_code_response, HttpRequest, RequestHandler, ResponseBody,
-    },
-    response::CacheControl,
+    handlers::{HttpRequest, RequestHandler, ResponseBody},
+    response::{build_status_code_response, CacheControl},
     static_file::StaticFileRulesService,
 };
 

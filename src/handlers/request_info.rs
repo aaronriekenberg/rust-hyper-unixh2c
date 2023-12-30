@@ -7,11 +7,8 @@ use serde::Serialize;
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::{
-    handlers::{
-        response_utils::build_json_response, route::RouteInfo, HttpRequest, RequestHandler,
-        ResponseBody,
-    },
-    response::CacheControl,
+    handlers::{route::RouteInfo, HttpRequest, RequestHandler},
+    response::{build_json_response, CacheControl, ResponseBody},
 };
 
 #[derive(Debug, Serialize)]

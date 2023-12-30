@@ -1,7 +1,6 @@
 mod commands;
 mod connection_info;
 mod request_info;
-mod response_utils;
 mod route;
 mod static_file;
 mod time_utils;

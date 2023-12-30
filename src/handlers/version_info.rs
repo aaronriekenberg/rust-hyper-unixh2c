@@ -5,11 +5,8 @@ use hyper::http::{Method, Response};
 use std::path::PathBuf;
 
 use crate::{
-    handlers::{
-        response_utils::build_json_response, route::RouteInfo, HttpRequest, RequestHandler,
-        ResponseBody,
-    },
-    response::CacheControl,
+    handlers::{route::RouteInfo, HttpRequest, RequestHandler, ResponseBody},
+    response::{build_json_response, CacheControl},
     version::get_verison_info,
 };
 
