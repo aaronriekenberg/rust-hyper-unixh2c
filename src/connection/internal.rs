@@ -48,12 +48,14 @@ pub struct ConnectionTrackerState {
 
 impl ConnectionTrackerState {
     pub fn new() -> Self {
+        let connection_limit = crate::config::instance()
+            .server_configuration
+            .connection
+            .limit;
         Self {
             next_connection_id: 1,
-            connection_limit: crate::config::instance()
-                .server_configuration
-                .connection
-                .limit,
+            connection_limit,
+            id_to_connection_info: HashMap::with_capacity(connection_limit),
             ..Default::default()
         }
     }
