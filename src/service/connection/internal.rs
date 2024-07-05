@@ -25,15 +25,13 @@ impl ConnectionTrackerMetrics {
     fn update_for_removed_connection(&mut self, removed_connection_info: &ConnectionInfo) {
         let removed_connection_age = removed_connection_info.age(Instant::now());
 
-        self.past_max_connection_age = cmp::max(
-            self.past_max_connection_age,
-            removed_connection_info.age(Instant::now()),
-        );
-
         self.past_min_connection_age = Some(cmp::min(
             self.past_min_connection_age.unwrap_or(Duration::MAX),
             removed_connection_age,
         ));
+
+        self.past_max_connection_age =
+            cmp::max(self.past_max_connection_age, removed_connection_age);
 
         self.past_max_requests_per_connection = cmp::max(
             self.past_max_requests_per_connection,
