@@ -18,16 +18,22 @@ use crate::{
 
 #[derive(thiserror::Error, Debug)]
 enum StaticFileHandlerError {
-    #[error("client error page build request error: {0}")]
-    ClientErrorPageBuildRequest(hyper::http::Error),
-
-    #[error("client error page resolve error: {0}")]
-    ClientErrorPageResolveRequest(std::io::Error),
-
-    #[error("client error page build response error: {0}")]
-    ClientErrorPageBuildResponse(hyper::http::Error),
-
     #[error("resolve error: {0}")]
+    ResolveRequest(std::io::Error),
+
+    #[error("build response error: {0}")]
+    BuildResponse(hyper::http::Error),
+
+    #[error("client error page error: {0}")]
+    ClientErrorPage(ClientErrorPageError),
+}
+
+#[derive(thiserror::Error, Debug)]
+enum ClientErrorPageError {
+    #[error("build request error: {0}")]
+    BuildRequest(hyper::http::Error),
+
+    #[error("resolve request error: {0}")]
     ResolveRequest(std::io::Error),
 
     #[error("build response error: {0}")]
@@ -88,7 +94,7 @@ impl StaticFileHandler {
         &self,
         original_request: &HttpRequest,
         status_code: StatusCode,
-    ) -> Result<Response<ResponseBody>, StaticFileHandlerError> {
+    ) -> Result<Response<ResponseBody>, ClientErrorPageError> {
         let mut client_error_page_request = HyperHttpRequest::get(self.client_error_page_path);
 
         // copy ACCEPT_ENCODING header from original request
@@ -104,19 +110,19 @@ impl StaticFileHandler {
 
         let client_error_page_request = client_error_page_request
             .body(())
-            .map_err(StaticFileHandlerError::ClientErrorPageBuildRequest)?;
+            .map_err(ClientErrorPageError::BuildRequest)?;
 
         let resolve_result = self
             .resolver
             .resolve_request(&client_error_page_request)
             .await
-            .map_err(StaticFileHandlerError::ClientErrorPageResolveRequest)?;
+            .map_err(ClientErrorPageError::ResolveRequest)?;
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
             .cache_headers(self.build_cache_headers(original_request, &resolve_result))
             .build(resolve_result)
-            .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
+            .map_err(ClientErrorPageError::BuildResponse)?;
 
         let (mut parts, body) = response.into_parts();
         parts.status = status_code;
@@ -149,28 +155,27 @@ impl StaticFileHandler {
         request: &HttpRequest,
         resolve_result: &ResolveResult,
     ) -> Result<Option<Response<ResponseBody>>, StaticFileHandlerError> {
-        Ok(
+        let client_error_page_status_option =
             if matches!(resolve_result, ResolveResult::PermissionDenied)
                 || self.block_dot_paths(resolve_result)
             {
-                Some(
-                    self.build_client_error_page_response(request, StatusCode::FORBIDDEN)
-                        .await?,
-                )
+                Some(StatusCode::FORBIDDEN)
             } else if matches!(resolve_result, ResolveResult::MethodNotMatched) {
-                Some(
-                    self.build_client_error_page_response(request, StatusCode::BAD_REQUEST)
-                        .await?,
-                )
+                Some(StatusCode::METHOD_NOT_ALLOWED)
             } else if matches!(resolve_result, ResolveResult::NotFound) {
-                Some(
-                    self.build_client_error_page_response(request, StatusCode::NOT_FOUND)
-                        .await?,
-                )
+                Some(StatusCode::NOT_FOUND)
             } else {
                 None
-            },
-        )
+            };
+
+        Ok(match client_error_page_status_option {
+            None => None,
+            Some(client_error_page_status) => Some(
+                self.build_client_error_page_response(request, client_error_page_status)
+                    .await
+                    .map_err(StaticFileHandlerError::ClientErrorPage)?,
+            ),
+        })
     }
 
     async fn try_handle(
