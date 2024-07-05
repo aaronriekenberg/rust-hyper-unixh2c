@@ -3,7 +3,7 @@ listeners = [
     { socket_type = "UNIX", bind_address = "/home/aaron/rust-hyper-server/socket" },
     { socket_type = "TCP", bind_address = "[::]:80" },
 ]
-connection = { limit = 200, max_lifetime = "2min", graceful_shutdown_timeout = "5sec" }
+connection = { limit = 1000, max_lifetime = "2min", graceful_shutdown_timeout = "5sec" }
 
 [static_file_configuration]
 root = "/home/aaron/aaronr.digital"
