@@ -184,8 +184,7 @@ impl StaticFileRulesService {
         self.cache_rules
             .iter()
             .find(|(matcher, _)| matcher.matches(&request_match_data))
-            .map(|(_, rule)| rule.build_cache_header(resolved_file))
-            .unwrap_or(None)
+            .and_then(|(_, rule)| rule.build_cache_header(resolved_file))
     }
 }
 
