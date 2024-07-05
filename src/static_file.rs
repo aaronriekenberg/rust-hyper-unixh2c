@@ -8,6 +8,11 @@ use std::{fmt::Debug, time::SystemTime};
 
 use crate::config::StaticFileCacheRuleType;
 
+struct RequestMatchData<'a> {
+    host_option: Option<&'a str>,
+    resolved_path_option: Option<&'a str>,
+}
+
 #[derive(Debug)]
 struct RequestMatcher {
     host_regex: Option<regex::Regex>,
@@ -38,10 +43,10 @@ impl RequestMatcher {
         })
     }
 
-    fn matches(&self, host_option: &Option<&str>, resolved_path_option: &Option<&str>) -> bool {
+    fn matches(&self, request_match_data: &RequestMatchData) -> bool {
         let matches = match &self.host_regex {
             None => true,
-            Some(host_regex) => match host_option {
+            Some(host_regex) => match request_match_data.host_option {
                 None => false,
                 Some(host) => host_regex.is_match(host),
             },
@@ -53,7 +58,7 @@ impl RequestMatcher {
 
         match &self.path_regex {
             None => true,
-            Some(path_regex) => match resolved_path_option {
+            Some(path_regex) => match request_match_data.resolved_path_option {
                 None => false,
                 Some(resolved_path) => path_regex.is_match(resolved_path),
             },
@@ -171,9 +176,14 @@ impl StaticFileRulesService {
     ) -> Option<Duration> {
         let resolved_path_option = resolved_file.path.to_str();
 
+        let request_match_data = RequestMatchData {
+            host_option,
+            resolved_path_option,
+        };
+
         self.cache_rules
             .iter()
-            .find(|(matcher, _)| matcher.matches(&host_option, &resolved_path_option))
+            .find(|(matcher, _)| matcher.matches(&request_match_data))
             .map(|(_, rule)| rule.build_cache_header(resolved_file))
             .unwrap_or(None)
     }
