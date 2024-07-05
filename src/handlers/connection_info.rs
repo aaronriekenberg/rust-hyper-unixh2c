@@ -12,13 +12,15 @@ use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 use crate::{
     config::ServerSocketType,
-    connection::{ConnectionID, ConnectionInfo, ConnectionTracker, ConnectionTrackerState},
     handlers::{
         route::RouteInfo,
         time_utils::{local_date_time_to_string, LocalDateTime},
         HttpRequest, RequestHandler, ResponseBody,
     },
     response::{build_json_response, CacheControl},
+    service::connection::{
+        ConnectionID, ConnectionInfo, ConnectionTrackerService, ConnectionTrackerState,
+    },
 };
 
 #[derive(Debug, Serialize)]
@@ -92,13 +94,13 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
 }
 
 struct ServerInfoHandler {
-    connection_tracker: &'static ConnectionTracker,
+    connection_tracker: &'static ConnectionTrackerService,
 }
 
 impl ServerInfoHandler {
     async fn new() -> Self {
         Self {
-            connection_tracker: ConnectionTracker::instance().await,
+            connection_tracker: ConnectionTrackerService::instance().await,
         }
     }
 }

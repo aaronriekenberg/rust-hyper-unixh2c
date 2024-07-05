@@ -2,7 +2,7 @@ use hyper::{body::Incoming, http::Request};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::connection::ConnectionID;
+use crate::service::connection::ConnectionID;
 
 #[derive(Clone, Copy, Debug)]
 pub struct RequestID(usize);

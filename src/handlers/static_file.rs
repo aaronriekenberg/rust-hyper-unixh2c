@@ -13,7 +13,7 @@ use tokio::time::Duration;
 use crate::{
     handlers::{HttpRequest, RequestHandler, ResponseBody},
     response::{build_status_code_response, CacheControl},
-    static_file::StaticFileRulesService,
+    service::static_file::StaticFileRulesService,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -56,7 +56,7 @@ impl StaticFileHandler {
         Self {
             resolver,
             client_error_page_path: &static_file_configuration.client_error_page_path,
-            static_file_rules_service: crate::static_file::rules_service_instance(),
+            static_file_rules_service: crate::service::static_file::rules_service_instance(),
         }
     }
 

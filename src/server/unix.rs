@@ -9,12 +9,13 @@ use tokio::net::UnixListener;
 use std::sync::Arc;
 
 use crate::{
-    config::ServerSocketType, connection::ConnectionTracker, server::handler::ConnectionHandler,
+    config::ServerSocketType, server::handler::ConnectionHandler,
+    service::connection::ConnectionTrackerService,
 };
 
 pub struct UnixServer {
     connection_handler: Arc<ConnectionHandler>,
-    connection_tracker: &'static ConnectionTracker,
+    connection_tracker: &'static ConnectionTrackerService,
     listener_configuration: &'static crate::config::ServerListenerConfiguration,
 }
 
@@ -25,7 +26,7 @@ impl UnixServer {
     ) -> Self {
         Self {
             connection_handler,
-            connection_tracker: ConnectionTracker::instance().await,
+            connection_tracker: ConnectionTrackerService::instance().await,
             listener_configuration,
         }
     }

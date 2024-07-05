@@ -86,7 +86,7 @@ impl Drop for ConnectionGuard {
         let id = self.id;
 
         tokio::task::spawn(async move {
-            ConnectionTracker::instance()
+            ConnectionTrackerService::instance()
                 .await
                 .remove_connection(id)
                 .await;
@@ -94,11 +94,11 @@ impl Drop for ConnectionGuard {
     }
 }
 
-pub struct ConnectionTracker {
+pub struct ConnectionTrackerService {
     state: RwLock<internal::ConnectionTrackerState>,
 }
 
-impl ConnectionTracker {
+impl ConnectionTrackerService {
     async fn new() -> Self {
         Self {
             state: RwLock::new(internal::ConnectionTrackerState::new()),
@@ -133,7 +133,7 @@ impl ConnectionTracker {
     }
 
     pub async fn instance() -> &'static Self {
-        static INSTANCE: OnceCell<ConnectionTracker> = OnceCell::const_new();
+        static INSTANCE: OnceCell<ConnectionTrackerService> = OnceCell::const_new();
 
         INSTANCE.get_or_init(Self::new).await
     }

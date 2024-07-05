@@ -1,10 +1,9 @@
 mod config;
-mod connection;
 mod handlers;
 mod request;
 mod response;
 mod server;
-mod static_file;
+mod service;
 mod tracing_config;
 mod version;
 
@@ -38,7 +37,9 @@ async fn try_main() -> anyhow::Result<()> {
         .await
         .context("read_configuration error")?;
 
-    crate::static_file::create_rules_service_instance()?;
+    crate::service::connection::ConnectionTrackerService::instance().await;
+
+    crate::service::static_file::create_rules_service_instance()?;
 
     let handlers = handlers::create_handlers().await?;
 

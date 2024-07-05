@@ -15,11 +15,11 @@ use tracing::{debug, info, instrument, warn, Instrument};
 use std::{convert::Infallible, sync::Arc};
 
 use crate::{
-    connection::{ConnectionGuard, ConnectionID},
     handlers::RequestHandler,
     request::{HttpRequest, RequestID, RequestIDFactory},
     response::ResponseBody,
     server::HyperReadWrite,
+    service::connection::{ConnectionGuard, ConnectionID},
 };
 
 pub struct ConnectionHandler {
