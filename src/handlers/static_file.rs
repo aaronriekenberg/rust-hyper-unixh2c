@@ -60,15 +60,25 @@ impl StaticFileHandler {
         }
     }
 
-    fn build_cache_headers(&self, resolve_result: &ResolveResult) -> Option<u32> {
+    fn build_cache_headers(
+        &self,
+        original_request: &HttpRequest,
+        resolve_result: &ResolveResult,
+    ) -> Option<u32> {
         fn duration_to_u32_seconds(duration: Duration) -> u32 {
             duration.as_secs().try_into().unwrap_or_default()
         }
 
+        let host_option = original_request
+            .hyper_request
+            .headers()
+            .get(header::HOST)
+            .and_then(|v| v.to_str().ok());
+
         match resolve_result {
             ResolveResult::Found(resolved_file) => self
                 .static_file_rules_service
-                .build_cache_header(resolved_file)
+                .build_cache_header(host_option, resolved_file)
                 .map(duration_to_u32_seconds),
             _ => None,
         }
@@ -104,7 +114,7 @@ impl StaticFileHandler {
 
         let response = hyper_staticfile::ResponseBuilder::new()
             .request(&client_error_page_request)
-            .cache_headers(self.build_cache_headers(&resolve_result))
+            .cache_headers(self.build_cache_headers(original_request, &resolve_result))
             .build(resolve_result)
             .map_err(StaticFileHandlerError::ClientErrorPageBuildResponse)?;
 
@@ -181,7 +191,7 @@ impl StaticFileHandler {
             return Ok(response);
         }
 
-        let cache_headers = self.build_cache_headers(&resolve_result);
+        let cache_headers = self.build_cache_headers(request, &resolve_result);
 
         debug!("cache_headers = {:?}", cache_headers);
 

@@ -71,7 +71,8 @@ pub enum StaticFileCacheRuleType {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StaticFileCacheRule {
-    pub path_regex: String,
+    pub host_regex: Option<String>,
+    pub path_regex: Option<String>,
     pub rule_type: StaticFileCacheRuleType,
     #[serde(with = "humantime_serde")]
     pub duration: Duration,

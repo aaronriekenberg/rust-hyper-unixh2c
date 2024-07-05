@@ -8,9 +8,60 @@ use std::{fmt::Debug, time::SystemTime};
 
 use crate::config::StaticFileCacheRuleType;
 
-trait CacheRule: Send + Sync + Debug {
-    fn matches(&self, resolved_path: &str) -> bool;
+#[derive(Debug)]
+struct RequestMatcher {
+    host_regex: Option<regex::Regex>,
+    path_regex: Option<regex::Regex>,
+}
 
+impl RequestMatcher {
+    fn new(cache_rule_config: &crate::config::StaticFileCacheRule) -> anyhow::Result<Self> {
+        let host_regex = match &cache_rule_config.host_regex {
+            None => None,
+            Some(host_regex) => Some(
+                regex::Regex::new(host_regex)
+                    .context("StaticFileRulesService::new: error parsing host_regex")?,
+            ),
+        };
+
+        let path_regex = match &cache_rule_config.path_regex {
+            None => None,
+            Some(path_regex) => Some(
+                regex::Regex::new(path_regex)
+                    .context("StaticFileRulesService::new: error parsing path_regex")?,
+            ),
+        };
+
+        Ok(Self {
+            host_regex,
+            path_regex,
+        })
+    }
+
+    fn matches(&self, host_option: &Option<&str>, resolved_path_option: &Option<&str>) -> bool {
+        let matches = match &self.host_regex {
+            None => true,
+            Some(host_regex) => match host_option {
+                None => false,
+                Some(host) => host_regex.is_match(host),
+            },
+        };
+
+        if !matches {
+            return false;
+        }
+
+        match &self.path_regex {
+            None => true,
+            Some(path_regex) => match resolved_path_option {
+                None => false,
+                Some(resolved_path) => path_regex.is_match(resolved_path),
+            },
+        }
+    }
+}
+
+trait CacheRule: Send + Sync + Debug {
     fn build_cache_header(
         &self,
         resolved_file: &hyper_staticfile::ResolvedFile,
@@ -19,24 +70,18 @@ trait CacheRule: Send + Sync + Debug {
 
 #[derive(Debug)]
 struct FixedTimeCacheHeaderRule {
-    path_regex: regex::Regex,
     file_cache_duration: Duration,
 }
 
 impl FixedTimeCacheHeaderRule {
-    fn new(path_regex: regex::Regex, file_cache_duration: Duration) -> Self {
+    fn new(file_cache_duration: Duration) -> Self {
         Self {
-            path_regex,
             file_cache_duration,
         }
     }
 }
 
 impl CacheRule for FixedTimeCacheHeaderRule {
-    fn matches(&self, resolved_path: &str) -> bool {
-        self.path_regex.is_match(resolved_path)
-    }
-
     fn build_cache_header(&self, _: &hyper_staticfile::ResolvedFile) -> Option<Duration> {
         Some(self.file_cache_duration)
     }
@@ -44,24 +89,18 @@ impl CacheRule for FixedTimeCacheHeaderRule {
 
 #[derive(Debug)]
 struct ModificationTimePlusDeltaCacheHeaderRule {
-    path_regex: regex::Regex,
     file_cache_duration: Duration,
 }
 
 impl ModificationTimePlusDeltaCacheHeaderRule {
-    fn new(path_regex: regex::Regex, file_cache_duration: Duration) -> Self {
+    fn new(file_cache_duration: Duration) -> Self {
         Self {
-            path_regex,
             file_cache_duration,
         }
     }
 }
 
 impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
-    fn matches(&self, resolved_path: &str) -> bool {
-        self.path_regex.is_match(resolved_path)
-    }
-
     fn build_cache_header(
         &self,
         resolved_file: &hyper_staticfile::ResolvedFile,
@@ -89,32 +128,33 @@ impl CacheRule for ModificationTimePlusDeltaCacheHeaderRule {
 
 #[derive(Debug)]
 pub struct StaticFileRulesService {
-    cache_rules: Vec<Box<dyn CacheRule>>,
+    cache_rules: Vec<(RequestMatcher, Box<dyn CacheRule>)>,
 }
 
 impl StaticFileRulesService {
     fn new() -> anyhow::Result<Self> {
         let static_file_configuration = &crate::config::instance().static_file_configuration;
 
-        let mut cache_rules: Vec<Box<dyn CacheRule>> =
+        let mut cache_rules: Vec<(RequestMatcher, Box<dyn CacheRule>)> =
             Vec::with_capacity(static_file_configuration.cache_rules.len());
 
         for cache_rule in &static_file_configuration.cache_rules {
-            let path_regex = regex::Regex::new(&cache_rule.path_regex)
-                .context("StaticFileRulesService::new: error parsing regex")?;
+            let request_matcher = RequestMatcher::new(cache_rule)?;
 
             match cache_rule.rule_type {
                 StaticFileCacheRuleType::FixedTime => {
-                    cache_rules.push(Box::new(FixedTimeCacheHeaderRule::new(
-                        path_regex,
-                        cache_rule.duration,
-                    )));
+                    cache_rules.push((
+                        request_matcher,
+                        Box::new(FixedTimeCacheHeaderRule::new(cache_rule.duration)),
+                    ));
                 }
                 StaticFileCacheRuleType::ModTimePlusDelta => {
-                    cache_rules.push(Box::new(ModificationTimePlusDeltaCacheHeaderRule::new(
-                        path_regex,
-                        cache_rule.duration,
-                    )));
+                    cache_rules.push((
+                        request_matcher,
+                        Box::new(ModificationTimePlusDeltaCacheHeaderRule::new(
+                            cache_rule.duration,
+                        )),
+                    ));
                 }
             }
         }
@@ -126,14 +166,15 @@ impl StaticFileRulesService {
 
     pub fn build_cache_header(
         &self,
+        host_option: Option<&str>,
         resolved_file: &hyper_staticfile::ResolvedFile,
     ) -> Option<Duration> {
-        let str_path = resolved_file.path.to_str().unwrap_or_default();
+        let resolved_path_option = resolved_file.path.to_str();
 
         self.cache_rules
             .iter()
-            .find(|rule| rule.matches(str_path))
-            .map(|rule| rule.build_cache_header(resolved_file))
+            .find(|(matcher, _)| matcher.matches(&host_option, &resolved_path_option))
+            .map(|(_, rule)| rule.build_cache_header(resolved_file))
             .unwrap_or(None)
     }
 }
