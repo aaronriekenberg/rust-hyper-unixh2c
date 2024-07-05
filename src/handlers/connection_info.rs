@@ -19,7 +19,7 @@ use crate::{
     },
     response::{build_json_response, CacheControl},
     service::connection::{
-        ConnectionID, ConnectionInfo, ConnectionTrackerService, ConnectionTrackerState,
+        ConnectionID, ConnectionInfo, ConnectionTrackerService, ConnectionTrackerStateSnapshot,
     },
 };
 
@@ -51,9 +51,11 @@ impl From<Arc<ConnectionInfo>> for ConnectionInfoDTO {
 }
 
 #[derive(Debug, Serialize)]
-struct ConnectionTrackerStateDTO {
+struct ConnectionTrackerStateSnaphotDTO {
     max_open_connections: usize,
     connection_limit_hits: usize,
+    #[serde(with = "humantime_serde")]
+    min_connection_lifetime: Duration,
     #[serde(with = "humantime_serde")]
     max_connection_lifetime: Duration,
     max_requests_per_connection: usize,
@@ -61,9 +63,9 @@ struct ConnectionTrackerStateDTO {
     open_connections: Vec<ConnectionInfoDTO>,
 }
 
-impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
-    fn from(state: ConnectionTrackerState) -> Self {
-        let id_to_open_connection: BTreeMap<ConnectionID, Arc<ConnectionInfo>> = state
+impl From<ConnectionTrackerStateSnapshot> for ConnectionTrackerStateSnaphotDTO {
+    fn from(state_snapshot: ConnectionTrackerStateSnapshot) -> Self {
+        let id_to_open_connection: BTreeMap<ConnectionID, Arc<ConnectionInfo>> = state_snapshot
             .open_connections
             .into_iter()
             .map(|c| (c.id, c))
@@ -80,13 +82,19 @@ impl From<ConnectionTrackerState> for ConnectionTrackerStateDTO {
             .collect();
 
         // truncate to seconds
-        let max_connection_lifetime = Duration::from_secs(state.max_connection_age.as_secs());
+        let min_connection_lifetime =
+            Duration::from_secs(state_snapshot.min_connection_lifetime.as_secs());
+
+        // truncate to seconds
+        let max_connection_lifetime =
+            Duration::from_secs(state_snapshot.max_connection_lifetime.as_secs());
 
         Self {
-            max_open_connections: state.max_open_connections,
-            connection_limit_hits: state.connection_limit_hits,
+            max_open_connections: state_snapshot.max_open_connections,
+            connection_limit_hits: state_snapshot.connection_limit_hits,
+            min_connection_lifetime,
             max_connection_lifetime,
-            max_requests_per_connection: state.max_requests_per_connection,
+            max_requests_per_connection: state_snapshot.max_requests_per_connection,
             num_open_connections,
             open_connections,
         }
@@ -108,8 +116,11 @@ impl ServerInfoHandler {
 #[async_trait]
 impl RequestHandler for ServerInfoHandler {
     async fn handle(&self, _request: &HttpRequest) -> Response<ResponseBody> {
-        let connection_tracker_state_dto: ConnectionTrackerStateDTO =
-            self.connection_tracker.state().await.into();
+        let connection_tracker_state_dto: ConnectionTrackerStateSnaphotDTO = self
+            .connection_tracker
+            .connection_tracker_state_snapshot()
+            .await
+            .into();
 
         build_json_response(connection_tracker_state_dto, CacheControl::NoCache)
     }

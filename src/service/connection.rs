@@ -120,13 +120,14 @@ impl ConnectionTrackerService {
         state.remove_connection(connection_id);
     }
 
-    pub async fn state(&self) -> ConnectionTrackerState {
+    pub async fn connection_tracker_state_snapshot(&self) -> ConnectionTrackerStateSnapshot {
         let state = self.state.read().await;
 
-        ConnectionTrackerState {
+        ConnectionTrackerStateSnapshot {
             max_open_connections: state.max_open_connections(),
             connection_limit_hits: state.connection_limit_hits(),
-            max_connection_age: state.max_connection_age(),
+            min_connection_lifetime: state.min_connection_lifetime(),
+            max_connection_lifetime: state.max_connection_lifetime(),
             max_requests_per_connection: state.max_requests_per_connection(),
             open_connections: state.open_connections().cloned().collect(),
         }
@@ -139,10 +140,11 @@ impl ConnectionTrackerService {
     }
 }
 
-pub struct ConnectionTrackerState {
+pub struct ConnectionTrackerStateSnapshot {
     pub max_open_connections: usize,
     pub connection_limit_hits: usize,
-    pub max_connection_age: Duration,
+    pub min_connection_lifetime: Duration,
+    pub max_connection_lifetime: Duration,
     pub max_requests_per_connection: usize,
     pub open_connections: Vec<Arc<ConnectionInfo>>,
 }
