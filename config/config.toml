@@ -1,7 +1,7 @@
 [server_configuration]
 listeners = [
     { socket_type = "UNIX", bind_address = "/home/aaron/rust-hyper-server/socket" },
-    { socket_type = "TCP", bind_address = "[::]:8080" },
+    { socket_type = "TCP", bind_address = "[::]:80" },
 ]
 connection = { limit = 200, max_lifetime = "2min", graceful_shutdown_timeout = "5sec" }
 
@@ -10,9 +10,10 @@ root = "/home/aaron/aaronr.digital"
 precompressed = { br = false, gz = true }
 client_error_page_path = "/error.html"
 cache_rules = [
-    { path_regex = '^/?error\.html', rule_type = "FIXED_TIME", duration = "5min" },
-    { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "15min" },
-    { path_regex = '.*', rule_type = "FIXED_TIME", duration = "1day" },
+    { path_regex = '^/?error\.html', rule_type = "FIXED_TIME", duration = "1min" },
+    { path_regex = '^/?vnstat/.*\.png$', rule_type = "MOD_TIME_PLUS_DELTA", duration = "5min" },
+    { host_regex = '^aaronr.digital|.*\.aaronr.digital$', rule_type = "FIXED_TIME", duration = "1hour" },
+    { rule_type = "FIXED_TIME", duration = "0min" },
 ]
 
 [context_configuration]
@@ -25,6 +26,12 @@ commands = [
     { id = "chronyc_sources", description = "chronyc sources", command = "/usr/bin/chronyc", args = [
         "-n",
         "sources",
+        "-v",
+    ] },
+    { id = "chronyc_sourcestats", description = "chronyc sourcestats", command = "/usr/bin/chronyc", args = [
+        "-a",
+        "-n",
+        "sourcestats",
         "-v",
     ] },
     { id = "df", description = "df", command = "/usr/bin/df", args = [
