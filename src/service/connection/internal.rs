@@ -1,8 +1,10 @@
+use ahash::AHashMap;
+
 use tokio::time::{Duration, Instant};
 
 use tracing::{debug, warn};
 
-use std::{cmp, collections::HashMap, sync::Arc};
+use std::{cmp, sync::Arc};
 
 use crate::config::ServerSocketType;
 
@@ -48,7 +50,7 @@ impl ConnectionTrackerMetrics {
 pub struct ConnectionTrackerState {
     next_connection_id: usize,
     connection_limit: usize,
-    id_to_connection_info: HashMap<ConnectionID, Arc<ConnectionInfo>>,
+    id_to_connection_info: AHashMap<ConnectionID, Arc<ConnectionInfo>>,
     metrics: ConnectionTrackerMetrics,
 }
 
@@ -61,7 +63,7 @@ impl ConnectionTrackerState {
         Self {
             next_connection_id: 1,
             connection_limit,
-            id_to_connection_info: HashMap::with_capacity(connection_limit),
+            id_to_connection_info: AHashMap::with_capacity(connection_limit),
             ..Default::default()
         }
     }

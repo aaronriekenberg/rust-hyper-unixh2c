@@ -1,3 +1,5 @@
+use ahash::AHashMap;
+
 use anyhow::Context;
 
 use async_trait::async_trait;
@@ -8,7 +10,6 @@ use tracing::debug;
 
 use std::{
     borrow::Cow,
-    collections::HashMap,
     path::{Path, PathBuf},
 };
 
@@ -36,7 +37,7 @@ impl<'a> From<&'a HttpRequest> for RouteKey<'a> {
 }
 
 pub struct Router {
-    route_key_to_handler: HashMap<RouteKey<'static>, Box<dyn RequestHandler>>,
+    route_key_to_handler: AHashMap<RouteKey<'static>, Box<dyn RequestHandler>>,
     default_route: Box<dyn RequestHandler>,
 }
 
@@ -46,7 +47,7 @@ impl Router {
         default_route: Box<dyn RequestHandler>,
     ) -> anyhow::Result<Self> {
         let mut router = Self {
-            route_key_to_handler: HashMap::with_capacity(routes.len()),
+            route_key_to_handler: AHashMap::with_capacity(routes.len()),
             default_route,
         };
 
