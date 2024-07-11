@@ -3,7 +3,9 @@ use hyper::{
     service::service_fn,
 };
 
-use hyper_util::{rt::TokioExecutor, server::conn::auto::Builder as HyperConnAutoBuilder};
+use hyper_util::{
+    rt::TokioExecutor, rt::TokioTimer, server::conn::auto::Builder as HyperConnAutoBuilder,
+};
 
 use tokio::{
     pin,
@@ -26,7 +28,6 @@ pub struct ConnectionHandler {
     request_handler: Box<dyn RequestHandler>,
     request_id_factory: RequestIDFactory,
     connection_timeout_durations: Vec<Duration>,
-    tokio_executor: TokioExecutor,
 }
 
 impl ConnectionHandler {
@@ -50,7 +51,6 @@ impl ConnectionHandler {
             request_handler,
             request_id_factory,
             connection_timeout_durations,
-            tokio_executor: TokioExecutor::new(),
         })
     }
 
@@ -121,7 +121,10 @@ impl ConnectionHandler {
                 .in_current_span()
         });
 
-        let builder = HyperConnAutoBuilder::new(self.tokio_executor.clone());
+        let mut builder = HyperConnAutoBuilder::new(TokioExecutor::new());
+
+        builder.http1().timer(TokioTimer::new());
+        builder.http2().timer(TokioTimer::new());
 
         let hyper_conn = builder.serve_connection(stream, service);
         pin!(hyper_conn);
